@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Calculator, History, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Calculator, History, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 
@@ -12,7 +12,8 @@ export function Sidebar() {
   const { user, signOut } = useAuth();
 
   const navItems = [
-    { name: 'Calculator', href: '/', icon: Calculator },
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { name: 'New Estimate', href: '/estimate', icon: Calculator },
     { name: 'History', href: '/history', icon: History },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
