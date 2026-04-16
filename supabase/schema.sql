@@ -10,7 +10,11 @@ CREATE TABLE IF NOT EXISTS quotes (
   selected_extras TEXT[] DEFAULT '{}',
   total NUMERIC NOT NULL,
   customer_name TEXT,
-  customer_phone TEXT
+  customer_phone TEXT,
+  customer_email TEXT,
+  customer_address TEXT,
+  notes TEXT,
+  status TEXT DEFAULT 'new'
 );
 
 -- Create Settings Table (Single row for global app settings)

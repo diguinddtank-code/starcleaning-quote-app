@@ -6,6 +6,7 @@ import { Trash2, User, Phone, Calendar, DollarSign, FileText, Printer, CheckCirc
 import { useState } from 'react';
 import { SavedQuote } from '@/lib/types';
 import { QuoteDocument } from '@/components/QuoteDocument';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function HistoryPage() {
   const { savedQuotes, deleteQuote } = useQuote();
@@ -98,30 +99,43 @@ export default function HistoryPage() {
       )}
 
       {/* Document Modal */}
-      {selectedQuote && (
-        <div className="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm z-50 overflow-y-auto print:bg-white print:p-0">
-          <div className="flex min-h-full items-start justify-center p-4 sm:p-6 md:py-12">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-zinc-200 overflow-hidden print:border-none print:shadow-none print:m-0 relative">
-              <div className="bg-zinc-50 border-b border-zinc-200 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
-                <div className="flex items-center gap-2 text-zinc-700 font-medium">
-                  <FileText size={20} /> Estimate Document
+      <AnimatePresence>
+        {selectedQuote && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm z-50 overflow-y-auto print:bg-white print:p-0"
+          >
+            <div className="flex min-h-full items-start justify-center p-4 sm:p-6 md:py-12">
+              <motion.div 
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                transition={{ type: "spring", duration: 0.5 }}
+                className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-zinc-200 overflow-hidden print:border-none print:shadow-none print:m-0 relative"
+              >
+                <div className="bg-zinc-50 border-b border-zinc-200 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
+                  <div className="flex items-center gap-2 text-zinc-700 font-medium">
+                    <FileText size={20} /> Estimate Document
+                  </div>
+                  <div className="flex w-full sm:w-auto gap-2">
+                    <button onClick={() => window.print()} className="flex-1 sm:flex-none justify-center px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2">
+                      <Printer size={16} /> Print / PDF
+                    </button>
+                    <button onClick={() => setSelectedQuote(null)} className="flex-1 sm:flex-none justify-center px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                      Close
+                    </button>
+                  </div>
                 </div>
-                <div className="flex w-full sm:w-auto gap-2">
-                  <button onClick={() => window.print()} className="flex-1 sm:flex-none justify-center px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2">
-                    <Printer size={16} /> Print / PDF
-                  </button>
-                  <button onClick={() => setSelectedQuote(null)} className="flex-1 sm:flex-none justify-center px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold rounded-lg transition-colors">
-                    Close
-                  </button>
+                <div className="p-0 sm:p-8 print:p-0">
+                  <QuoteDocument quote={selectedQuote} settings={settings} />
                 </div>
-              </div>
-              <div className="p-0 sm:p-8 print:p-0">
-                <QuoteDocument quote={selectedQuote} settings={settings} />
-              </div>
+              </motion.div>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

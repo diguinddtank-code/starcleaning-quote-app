@@ -5,18 +5,25 @@ import { useSettings } from '@/context/SettingsContext';
 import { Stepper } from '@/components/ui/Stepper';
 import { ServiceCard, ExtraCard } from '@/components/ui/Cards';
 import { ServiceType } from '@/lib/types';
-import { Home, Sparkles, Key, Wind, Droplets, Box, WashingMachine, CarFront, FileText, CheckCircle2, Building2, Hammer, Printer } from 'lucide-react';
+import { Home, Sparkles, Key, Wind, Droplets, Box, WashingMachine, CarFront, FileText, CheckCircle2, Building2, Hammer, Printer, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { SavedQuote } from '@/lib/types';
 import { QuoteDocument } from '@/components/QuoteDocument';
+import { motion, AnimatePresence } from 'motion/react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function CalculatorPage() {
   const { quote, updateQuote, totalPrice, saveQuote, resetQuote } = useQuote();
   const { settings } = useSettings();
+  const router = useRouter();
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [showSummary, setShowSummary] = useState(false);
   const [savedEstimate, setSavedEstimate] = useState<SavedQuote | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleServiceChange = (type: ServiceType) => {
     updateQuote({ serviceType: type });
@@ -32,9 +39,35 @@ export default function CalculatorPage() {
   };
 
   const handleSave = async () => {
-    const newQuote = await saveQuote(customerName, customerPhone);
-    setSavedEstimate(newQuote);
-    setShowSummary(true);
+    setIsGenerating(true);
+    setSaveError(null);
+    
+    // Simulate a slight delay for visual feedback of "processing"
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    try {
+      const newQuote = await saveQuote(customerName, customerPhone);
+      setSavedEstimate(newQuote);
+      
+      setIsGenerating(false);
+      setShowSuccessToast(true);
+      
+      // Show the summary modal after the toast
+      setTimeout(() => {
+        setShowSuccessToast(false);
+        setShowSummary(true);
+      }, 2500);
+    } catch (error: any) {
+      console.error("Failed to save quote:", error);
+      setIsGenerating(false);
+      setSaveError(error.message || "Failed to sync with database. Check Supabase RLS policies.");
+      
+      // We still show the summary so they don't lose their work, but they know it didn't sync
+      setTimeout(() => {
+        setSaveError(null);
+        setShowSummary(true);
+      }, 4000);
+    }
   };
 
   return (
@@ -231,13 +264,27 @@ export default function CalculatorPage() {
               </div>
               <button 
                 onClick={handleSave}
-                className="w-full py-3 mt-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+                disabled={isGenerating || showSuccessToast}
+                className="w-full py-3 mt-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-80 disabled:cursor-not-allowed"
               >
-                Save & Synchronize Quote
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating Estimate...
+                  </>
+                ) : showSuccessToast ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    Estimate Generated!
+                  </>
+                ) : (
+                  'Save & Synchronize Quote'
+                )}
               </button>
               <button 
                 onClick={resetQuote}
-                className="w-full py-2.5 text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 text-sm font-medium rounded-lg transition-colors"
+                disabled={isGenerating}
+                className="w-full py-2.5 text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
               >
                 Clear Form
               </button>
@@ -246,11 +293,66 @@ export default function CalculatorPage() {
         </div>
       </div>
 
+      {/* Success Toast Overlay */}
+      <AnimatePresence>
+        {showSuccessToast && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed bottom-8 right-8 z-50 bg-zinc-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4"
+          >
+            <div className="bg-green-500/20 p-2 rounded-full">
+              <CheckCircle2 className="text-green-400 w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="font-bold text-sm">ESTIMATE GERADO!</h4>
+              <p className="text-xs text-zinc-400">Synchronized with history.</p>
+            </div>
+            <button 
+              onClick={() => router.push('/')}
+              className="ml-4 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs font-medium rounded-lg transition-colors"
+            >
+              Ver no Histórico
+            </button>
+          </motion.div>
+        )}
+
+        {saveError && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed bottom-8 right-8 z-50 bg-red-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4"
+          >
+            <div className="bg-red-500/20 p-2 rounded-full">
+              <Hammer className="text-red-400 w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="font-bold text-sm">Erro ao Sincronizar</h4>
+              <p className="text-xs text-red-200 max-w-xs">{saveError}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Summary Modal */}
+      <AnimatePresence>
       {showSummary && savedEstimate && (
-        <div className="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm z-50 overflow-y-auto print:bg-white print:p-0">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm z-50 overflow-y-auto print:bg-white print:p-0"
+        >
           <div className="flex min-h-full items-start justify-center p-4 sm:p-6 md:py-12">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-zinc-200 overflow-hidden print:border-none print:shadow-none print:m-0 relative">
+            <motion.div 
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-zinc-200 overflow-hidden print:border-none print:shadow-none print:m-0 relative"
+            >
               <div className="bg-zinc-50 border-b border-zinc-200 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
                 <div className="flex items-center gap-2 text-green-600 font-medium">
                   <CheckCircle2 size={20} /> Estimate Saved Successfully
@@ -258,6 +360,16 @@ export default function CalculatorPage() {
                 <div className="flex w-full sm:w-auto gap-2">
                   <button onClick={() => window.print()} className="flex-1 sm:flex-none justify-center px-4 py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2">
                     <Printer size={16} /> Print / PDF
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowSummary(false);
+                      resetQuote();
+                      router.push('/');
+                    }} 
+                    className="flex-1 sm:flex-none justify-center px-4 py-2.5 bg-sky-100 hover:bg-sky-200 text-sky-700 text-sm font-bold rounded-lg transition-colors shadow-sm"
+                  >
+                    Ver no Histórico
                   </button>
                   <button 
                     onClick={() => {
@@ -273,10 +385,11 @@ export default function CalculatorPage() {
               <div className="p-0 sm:p-8 print:p-0">
                 <QuoteDocument quote={savedEstimate} settings={settings} />
               </div>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }

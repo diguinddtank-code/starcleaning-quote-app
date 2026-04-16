@@ -86,6 +86,8 @@ export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
           <h3 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-3">Prepared For</h3>
           <p className="text-sm font-bold text-zinc-900 mb-1">{quote.customerName || 'Valued Customer'}</p>
           {quote.customerPhone && <p className="text-xs text-zinc-600">{quote.customerPhone}</p>}
+          {quote.customerEmail && <p className="text-xs text-zinc-600">{quote.customerEmail}</p>}
+          {quote.customerAddress && <p className="text-xs text-zinc-600 mt-1">{quote.customerAddress}</p>}
         </div>
       </div>
 

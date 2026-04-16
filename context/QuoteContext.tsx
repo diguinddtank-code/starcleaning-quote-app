@@ -11,6 +11,7 @@ interface QuoteContextType {
   totalPrice: number;
   savedQuotes: SavedQuote[];
   saveQuote: (customerName?: string, customerPhone?: string) => Promise<SavedQuote>;
+  updateLead: (id: string, updates: Partial<SavedQuote>) => Promise<void>;
   deleteQuote: (id: string) => void;
   resetQuote: () => void;
 }
@@ -55,6 +56,10 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
               total: Number(q.total),
               customerName: q.customer_name,
               customerPhone: q.customer_phone,
+              customerEmail: q.customer_email,
+              customerAddress: q.customer_address,
+              notes: q.notes,
+              status: q.status || 'new',
             }));
             setSavedQuotes(mappedQuotes);
           }
@@ -80,6 +85,10 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
                 total: Number(q.total),
                 customerName: q.customer_name,
                 customerPhone: q.customer_phone,
+                customerEmail: q.customer_email,
+                customerAddress: q.customer_address,
+                notes: q.notes,
+                status: q.status || 'new',
               };
               setSavedQuotes((prev) => {
                 if (prev.some(p => p.id === newQuote.id)) return prev;
@@ -101,6 +110,10 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
                 total: Number(q.total),
                 customerName: q.customer_name,
                 customerPhone: q.customer_phone,
+                customerEmail: q.customer_email,
+                customerAddress: q.customer_address,
+                notes: q.notes,
+                status: q.status || 'new',
               } : old));
             }
           })
@@ -165,26 +178,11 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
   const totalPrice = calculateTotal();
 
   const saveQuote = async (customerName?: string, customerPhone?: string): Promise<SavedQuote> => {
-    const quoteId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
-    const dateStr = new Date().toISOString();
-    
-    const newQuote: SavedQuote = {
-      ...quote,
-      id: quoteId,
-      date: dateStr,
-      total: totalPrice,
-      customerName,
-      customerPhone,
-    };
-
-    // Optimistic update
-    setSavedQuotes((prev) => [newQuote, ...prev]);
+    let newQuote: SavedQuote;
 
     if (hasSupabase && supabase) {
       try {
-        await supabase.from('quotes').insert({
-          id: quoteId,
-          created_at: dateStr,
+        const { data, error } = await supabase.from('quotes').insert({
           sq_ft: quote.sqFt,
           beds: quote.beds,
           baths: quote.baths,
@@ -194,15 +192,80 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
           total: totalPrice,
           customer_name: customerName || null,
           customer_phone: customerPhone || null,
-        });
+          status: 'new',
+        }).select().single();
+
+        if (error) {
+          console.error('Supabase insert error:', error);
+          throw error;
+        }
+
+        newQuote = {
+          ...quote,
+          id: data.id,
+          date: data.created_at,
+          total: totalPrice,
+          customerName,
+          customerPhone,
+          status: 'new',
+        };
       } catch (e) {
         console.error('Failed to save quote to Supabase', e);
+        // Fallback to local generation if Supabase fails
+        const quoteId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+        newQuote = {
+          ...quote,
+          id: quoteId,
+          date: new Date().toISOString(),
+          total: totalPrice,
+          customerName,
+          customerPhone,
+          status: 'new',
+        };
       }
     } else {
+      const quoteId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+      newQuote = {
+        ...quote,
+        id: quoteId,
+        date: new Date().toISOString(),
+        total: totalPrice,
+        customerName,
+        customerPhone,
+        status: 'new',
+      };
       localStorage.setItem('starCleaningHistory', JSON.stringify([newQuote, ...savedQuotes]));
     }
+
+    // Optimistic update
+    setSavedQuotes((prev) => [newQuote, ...prev]);
     
     return newQuote;
+  };
+
+  const updateLead = async (id: string, updates: Partial<SavedQuote>) => {
+    // Optimistic update
+    setSavedQuotes((prev) => prev.map((q) => q.id === id ? { ...q, ...updates } : q));
+
+    if (hasSupabase && supabase) {
+      try {
+        const dbUpdates: any = {};
+        if (updates.customerName !== undefined) dbUpdates.customer_name = updates.customerName;
+        if (updates.customerPhone !== undefined) dbUpdates.customer_phone = updates.customerPhone;
+        if (updates.customerEmail !== undefined) dbUpdates.customer_email = updates.customerEmail;
+        if (updates.customerAddress !== undefined) dbUpdates.customer_address = updates.customerAddress;
+        if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+        if (updates.status !== undefined) dbUpdates.status = updates.status;
+
+        const { error } = await supabase.from('quotes').update(dbUpdates).eq('id', id);
+        if (error) throw error;
+      } catch (e) {
+        console.error('Failed to update lead in Supabase', e);
+      }
+    } else {
+      const updated = savedQuotes.map((q) => q.id === id ? { ...q, ...updates } : q);
+      localStorage.setItem('starCleaningHistory', JSON.stringify(updated));
+    }
   };
 
   const deleteQuote = async (id: string) => {
@@ -223,7 +286,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <QuoteContext.Provider
-      value={{ quote, updateQuote, totalPrice, savedQuotes, saveQuote, deleteQuote, resetQuote }}
+      value={{ quote, updateQuote, totalPrice, savedQuotes, saveQuote, updateLead, deleteQuote, resetQuote }}
     >
       {children}
     </QuoteContext.Provider>

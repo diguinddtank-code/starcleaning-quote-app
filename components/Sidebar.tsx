@@ -14,7 +14,7 @@ export function Sidebar() {
   const navItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'New Estimate', href: '/estimate', icon: Calculator },
-    { name: 'History', href: '/history', icon: History },
+    { name: 'Leads', href: '/leads', icon: History },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
