@@ -164,7 +164,7 @@ export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
       </div>
 
       {/* Totals */}
-      <div className="flex justify-end mb-12">
+      <div className="flex justify-end mb-8">
         <div className="w-full sm:w-80 bg-zinc-50 p-5 rounded-xl border border-zinc-200">
           <div className="flex justify-between items-center mb-3 text-sm">
             <span className="text-zinc-500">Subtotal</span>
@@ -189,6 +189,33 @@ export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
         </div>
       </div>
       
+      {/* Internal Team Negotiation Guide - HIDDEN ON PRINT */}
+      <div className="mb-12 print:hidden">
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 text-amber-800 font-bold mb-3 uppercase tracking-wider text-xs">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            Internal Team: Negotiation Margin
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="bg-white/60 p-3 rounded-lg border border-amber-100">
+              <span className="block text-[10px] uppercase font-bold text-amber-700/70 mb-1">Pass to Client</span>
+              <span className="font-bold text-zinc-900">${quote.total}</span>
+            </div>
+            <div className="bg-white/60 p-3 rounded-lg border border-amber-100">
+              <span className="block text-[10px] uppercase font-bold text-amber-700/70 mb-1">Max 10% Discount</span>
+              <span className="font-bold text-amber-700">${Math.round(quote.total * 0.9)}</span>
+            </div>
+            <div className="bg-white/60 p-3 rounded-lg border border-red-100">
+              <span className="block text-[10px] uppercase font-bold text-red-700/70 mb-1">Max 15% (Absolute Limit)</span>
+              <span className="font-bold text-red-600">${Math.round(quote.total * 0.85)}</span>
+            </div>
+            <div className="bg-white/60 p-3 rounded-lg border border-amber-100 flex items-center justify-center text-center text-[10px] text-amber-800">
+              Use discounts only to close the sale if price is the main objection.
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Terms */}
       <div className="border-t border-zinc-200 pt-8">
         <h3 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-3">Terms & Conditions</h3>

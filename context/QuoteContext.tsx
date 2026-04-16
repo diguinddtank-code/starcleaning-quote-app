@@ -60,6 +60,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
               customerAddress: q.customer_address,
               notes: q.notes,
               status: q.status || 'new',
+              createdByEmail: q.created_by_email,
             }));
             setSavedQuotes(mappedQuotes);
           }
@@ -89,6 +90,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
                 customerAddress: q.customer_address,
                 notes: q.notes,
                 status: q.status || 'new',
+                createdByEmail: q.created_by_email,
               };
               setSavedQuotes((prev) => {
                 if (prev.some(p => p.id === newQuote.id)) return prev;
@@ -114,6 +116,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
                 customerAddress: q.customer_address,
                 notes: q.notes,
                 status: q.status || 'new',
+                createdByEmail: q.created_by_email,
               } : old));
             }
           })
@@ -182,6 +185,9 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
 
     if (hasSupabase && supabase) {
       try {
+        const { data: userAuth } = await supabase.auth.getUser();
+        const userEmail = userAuth?.user?.email || undefined;
+
         const { data, error } = await supabase.from('quotes').insert({
           sq_ft: quote.sqFt,
           beds: quote.beds,
@@ -193,6 +199,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
           customer_name: customerName || null,
           customer_phone: customerPhone || null,
           status: 'new',
+          created_by_email: userEmail,
         }).select().single();
 
         if (error) {

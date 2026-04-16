@@ -110,9 +110,17 @@ export default function LeadsPage() {
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-sky-50 text-sky-700 rounded-md text-xs font-semibold uppercase tracking-wider">
                     {quote.serviceType}
                   </span>
-                  <span className="text-zinc-400 text-xs font-medium flex items-center gap-1 ml-auto md:ml-0">
-                    <Calendar size={14} /> {new Date(quote.date).toLocaleDateString()}
-                  </span>
+                  <div className="flex items-center gap-3 ml-auto md:ml-0 text-zinc-400 text-xs font-medium">
+                    <span className="flex items-center gap-1" title="Created At Time">
+                      <Calendar size={14} /> 
+                      {new Date(quote.date).toLocaleDateString()} {new Date(quote.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {quote.createdByEmail && (
+                       <span className="hidden sm:inline-flex items-center gap-1 bg-zinc-100 text-zinc-500 px-2 py-0.5 rounded-full" title={`Created by ${quote.createdByEmail}`}>
+                         <User size={12} /> {quote.createdByEmail.split('@')[0]}
+                       </span>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="flex flex-col">

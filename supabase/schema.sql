@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS quotes (
   customer_email TEXT,
   customer_address TEXT,
   notes TEXT,
-  status TEXT DEFAULT 'new'
+  status TEXT DEFAULT 'new',
+  created_by_email TEXT
 );
 
 -- Create Settings Table (Single row for global app settings)

@@ -5,7 +5,7 @@ import { useSettings } from '@/context/SettingsContext';
 import { Stepper } from '@/components/ui/Stepper';
 import { ServiceCard, ExtraCard } from '@/components/ui/Cards';
 import { ServiceType } from '@/lib/types';
-import { Home, Sparkles, Key, Wind, Droplets, Box, WashingMachine, CarFront, FileText, CheckCircle2, Building2, Hammer, Printer, Loader2 } from 'lucide-react';
+import { Home, Sparkles, Key, Wind, Droplets, Box, WashingMachine, CarFront, FileText, CheckCircle2, Building2, Hammer, Printer, Loader2, BookOpen, ShieldAlert } from 'lucide-react';
 import { useState } from 'react';
 import { SavedQuote } from '@/lib/types';
 import { QuoteDocument } from '@/components/QuoteDocument';
@@ -244,6 +244,26 @@ export default function CalculatorPage() {
               </div>
             </div>
 
+            <div className="mb-6 p-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200 shadow-sm">
+              <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <ShieldAlert size={14} className="text-amber-600" />
+                Negotiation Margin
+              </p>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-amber-900 font-medium">Discount (10%)</span>
+                  <span className="text-amber-700 font-bold bg-amber-100/50 px-2 py-0.5 rounded">${Math.round(totalPrice * 0.9)}</span>
+                </div>
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-red-900 font-medium">Bottom Limit (15%)</span>
+                  <span className="text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded">${Math.round(totalPrice * 0.85)}</span>
+                </div>
+              </div>
+              <Link href="/playbook" target="_blank" className="mt-3 flex items-center justify-center gap-1.5 w-full py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors">
+                <BookOpen size={14} /> Open Sales Playbook
+              </Link>
+            </div>
+
             <div className="space-y-3">
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Client Details</label>
@@ -306,14 +326,14 @@ export default function CalculatorPage() {
               <CheckCircle2 className="text-green-400 w-6 h-6" />
             </div>
             <div>
-              <h4 className="font-bold text-sm">ESTIMATE GERADO!</h4>
-              <p className="text-xs text-zinc-400">Synchronized with history.</p>
+              <h4 className="font-bold text-sm">ESTIMATE GENERATED!</h4>
+              <p className="text-xs text-zinc-400">Synchronized with leads.</p>
             </div>
             <button 
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/leads')}
               className="ml-4 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs font-medium rounded-lg transition-colors"
             >
-              Ver no Histórico
+              View in Leads
             </button>
           </motion.div>
         )}
@@ -329,7 +349,7 @@ export default function CalculatorPage() {
               <Hammer className="text-red-400 w-6 h-6" />
             </div>
             <div>
-              <h4 className="font-bold text-sm">Erro ao Sincronizar</h4>
+              <h4 className="font-bold text-sm">Sync Error</h4>
               <p className="text-xs text-red-200 max-w-xs">{saveError}</p>
             </div>
           </motion.div>
@@ -365,11 +385,11 @@ export default function CalculatorPage() {
                     onClick={() => {
                       setShowSummary(false);
                       resetQuote();
-                      router.push('/');
+                      router.push('/leads');
                     }} 
                     className="flex-1 sm:flex-none justify-center px-4 py-2.5 bg-sky-100 hover:bg-sky-200 text-sky-700 text-sm font-bold rounded-lg transition-colors shadow-sm"
                   >
-                    Ver no Histórico
+                    View in Leads
                   </button>
                   <button 
                     onClick={() => {

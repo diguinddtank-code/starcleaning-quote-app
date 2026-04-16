@@ -39,5 +39,6 @@ export interface SavedQuote extends QuoteState {
   customerEmail?: string;
   customerAddress?: string;
   notes?: string;
-  status?: 'new' | 'contacted' | 'scheduled' | 'completed' | 'lost';
+  status?: 'new' | 'contacted' | 'scheduled' | 'completed' | 'lost' | string;
+  createdByEmail?: string;
 }
