@@ -37,18 +37,18 @@ export default function PlaybookPage() {
                   <span className="bg-sky-100 text-sky-700 w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs">1</span>
                   <h3 className="font-bold text-zinc-900">The Hook & Greeting (Abordagem)</h3>
                 </div>
-                <p className="text-sm text-zinc-500 mb-2">Be super friendly and energetic. Put a smile on your face!</p>
+                <p className="text-sm text-zinc-500 mb-2">Be professional, warm, and confident. Respect their time immediately.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <p className="text-xs font-bold text-slate-400 mb-2">🇺🇸 ENGLISH</p>
                     <p className="text-sm text-zinc-700 italic">
-                      "Hi [Name]! This is [Your Name] from Star Cleaning. I saw you requested an estimate. How is your day going? I'm so excited to help you get your home sparkling!"
+                      "Hi [Name], this is [Your Name] with Star Cleaning! I'm following up on the estimate you requested online. Did I catch you at a good time to quickly go over the details?"
                     </p>
                   </div>
                   <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200">
                     <p className="text-xs font-bold text-zinc-400 mb-2">🇧🇷 PORTUGUÊS</p>
                     <p className="text-sm text-zinc-700 italic">
-                      "Oi [Nome]! Aqui é a [Seu Nome] da Star Cleaning. Vi que pediu um orçamento. Como está seu dia? Estou super animada para te ajudar a deixar sua casa brilhando!"
+                      "Oi [Nome]! Aqui é a [Seu Nome] da Star Cleaning. Estou ligando sobre o orçamento que você pediu online. Você tem um minutinho pra gente ver os detalhes rapidinho?"
                     </p>
                   </div>
                 </div>
@@ -58,20 +58,20 @@ export default function PlaybookPage() {
               <div className="border-b border-zinc-100 p-6 space-y-4">
                 <div className="flex items-center gap-2">
                   <span className="bg-sky-100 text-sky-700 w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs">2</span>
-                  <h3 className="font-bold text-zinc-900">Discovery & Pain Points (Descobrindo a Dor)</h3>
+                  <h3 className="font-bold text-zinc-900">Discovery & Priorities (Descobrindo a Dor)</h3>
                 </div>
-                <p className="text-sm text-zinc-500 mb-2">Don't just ask what to clean. Ask <strong className="text-sky-600">WHY</strong> they need it. Are they working moms? Busy professionals?</p>
+                <p className="text-sm text-zinc-500 mb-2">Identify their main goal naturally. Are they overwhelmed or just need a deep clean?</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <p className="text-xs font-bold text-slate-400 mb-2">🇺🇸 ENGLISH</p>
                     <p className="text-sm text-zinc-700 italic">
-                      "To make sure I give you exactly what you need, tell me a bit about your routine. Are you juggling work and kids? Just looking to reclaim your weekends? We know how exhausting it is, and we want to give you your free time back!"
+                      "Great! To make sure we customize this perfectly for you, what are your main priorities right now? Are you looking to take the cleaning off your plate so you can get your weekends back?"
                     </p>
                   </div>
                   <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200">
                     <p className="text-xs font-bold text-zinc-400 mb-2">🇧🇷 PORTUGUÊS</p>
                     <p className="text-sm text-zinc-700 italic">
-                      "Para te dar exatamente o que precisa, me conta sobre sua rotina. Correria com trabalho e crianças? Só querendo seus finais de semana de volta? Sabemos como é cansativo e queremos devolver seu tempo livre!"
+                      "Ótimo! Para personalizar o serviço pra você, quais são suas prioridades hoje? Você tá buscando tirar a limpeza da sua rotina para poder aproveitar melhor seus finais de semana?"
                     </p>
                   </div>
                 </div>
@@ -83,18 +83,18 @@ export default function PlaybookPage() {
                   <span className="bg-sky-100 text-sky-700 w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs">3</span>
                   <h3 className="font-bold text-zinc-900">Selling Value & Peace of Mind (Vendendo o Valor)</h3>
                 </div>
-                <p className="text-sm text-zinc-500 mb-2">Sell the feeling of a clean home. Mention safety (fully insured) and convenience (we bring supplies).</p>
+                <p className="text-sm text-zinc-500 mb-2">Focus on peace of mind and convenience. We handle everything.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <p className="text-xs font-bold text-slate-400 mb-2">🇺🇸 ENGLISH</p>
                     <p className="text-sm text-zinc-700 italic">
-                      "Imagine coming home on Friday to a perfectly clean, fresh-smelling house. You don't have to lift a finger all weekend. Plus, we bring all supplies and are fully insured for your peace of mind. Your total investment to get your weekend back is <strong>$[Price]</strong>."
+                      "We'd love to help with that. Our goal is to take cleaning completely off your hands. We bring all our own supplies, and our crews are fully insured, so you don't have to worry about a thing. For a [Frequency] service, your total would be <strong>$[Price].</strong>"
                     </p>
                   </div>
                   <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200">
                     <p className="text-xs font-bold text-zinc-400 mb-2">🇧🇷 PORTUGUÊS</p>
                     <p className="text-sm text-zinc-700 italic">
-                      "Imagina chegar sexta-feira numa casa cheirosa e limpinha. Você não vai mover um dedo no fim de semana. Levamos tudo e somos segurados para sua paz de espírito. O investimento para ter seu fds de volta é <strong>$[Preço]</strong>."
+                      "Adoraríamos te ajudar com isso. Nosso objetivo é tirar a limpeza 100% das suas mãos. Levamos todos os produtos e nossa equipe é segurada, pra você não se preocupar com nada. Para uma limpeza [Frequência], o valor seria <strong>$[Preço].</strong>"
                     </p>
                   </div>
                 </div>
@@ -106,18 +106,18 @@ export default function PlaybookPage() {
                   <span className="bg-sky-100 text-sky-700 w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs">4</span>
                   <h3 className="font-bold text-zinc-900">The Soft Close (O Fechamento)</h3>
                 </div>
-                <p className="text-sm text-zinc-500 mb-2">Assume the sale. Don't ask "do you want it?", ask "when do you want it?".</p>
+                <p className="text-sm text-zinc-500 mb-2">Consultative close. Assume the scheduling confidently.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <p className="text-xs font-bold text-slate-400 mb-2">🇺🇸 ENGLISH</p>
                     <p className="text-sm text-zinc-700 italic">
-                      "I have my best team available this <strong>[Day]</strong> morning. Should I lock in that spot for you so you can just relax this weekend?"
+                      "Our schedule is filling up for next week, but we do have an opening on <strong>[Day]</strong> at <strong>[Time]</strong>. Would you like me to go ahead and reserve that spot for you?"
                     </p>
                   </div>
                   <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200">
                     <p className="text-xs font-bold text-zinc-400 mb-2">🇧🇷 PORTUGUÊS</p>
                     <p className="text-sm text-zinc-700 italic">
-                      "Tenho minha melhor equipe livre na <strong>[Dia]</strong> de manhã. Posso reservar esse horário para você conseguir relaxar esse fim de semana?"
+                      "Nossa agenda está enchendo rápido para a próxima semana, mas temos uma vaga na <strong>[Dia]</strong> às <strong>[Hora]</strong>. Quer que eu já deixe esse horário reservado pra você?"
                     </p>
                   </div>
                 </div>
@@ -144,13 +144,13 @@ export default function PlaybookPage() {
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 border-l-4 border-l-sky-500">
                     <p className="text-xs font-bold text-slate-400 mb-2">🇺🇸 ENGLISH RESPONSE</p>
                     <p className="text-sm text-zinc-700 italic">
-                      "I totally understand, [Name]. There are cheaper options out there, but with us, you're not just buying a quick wipe-down. You're buying your Saturday back, complete peace of mind with our fully insured pros, and hotel-quality cleaning. Isn't your free time worth that?"
+                      "I completely understand, [Name]. There are definitely cheaper options out there. But with us, you're paying for verified, fully insured professionals, and the guarantee that if something isn't perfect, we come back and fix it. It's about giving you complete peace of mind and knowing it's done right."
                     </p>
                   </div>
                   <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 border-l-4 border-l-sky-500">
                     <p className="text-xs font-bold text-zinc-400 mb-2">🇧🇷 RESPOSTA EM PT</p>
                     <p className="text-sm text-zinc-700 italic">
-                      "Eu entendo perfeitamente. Tem opções mais baratas, mas com a gente, você não paga só por uma faxina. Você está comprando o seu sábado de volta, paz de espírito com equipe segurada e limpeza nível hotel. Seu tempo livre não vale isso?"
+                      "Eu entendo perfeitamente, [Nome]. Realmente existem opções mais baratas. Mas com a gente você está pagando por profissionais verificados e segurados, e pela garantia de que se algo não ficar perfeito, nós voltamos pra arrumar. É sobre ter paz de espírito e saber que o serviço foi bem feito."
                     </p>
                   </div>
                 </div>
@@ -170,13 +170,13 @@ export default function PlaybookPage() {
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 border-l-4 border-l-sky-500">
                     <p className="text-xs font-bold text-slate-400 mb-2">🇺🇸 ENGLISH RESPONSE</p>
                     <p className="text-sm text-zinc-700 italic">
-                      "Of course! Husbands usually love the idea of not having to clean! Our schedule fills up super fast, though. How about I pencil you in for [Day] to hold the spot? If they say no, just text me and I'll cancel it, zero stress for you."
+                      "Of course, that makes total sense! Our schedule tends to fill up pretty quickly for next week, so I can pencil you in for [Day] just to secure the spot. If they decide against it, just let me know and I can cancel it, no pressure at all."
                     </p>
                   </div>
                   <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 border-l-4 border-l-sky-500">
                     <p className="text-xs font-bold text-zinc-400 mb-2">🇧🇷 RESPOSTA EM PT</p>
                     <p className="text-sm text-zinc-700 italic">
-                      "Claro! Maridos geralmente amam a ideia de não ter que limpar nada! Mas nossa agenda enche rápido. Que tal eu pré-reservar a [Dia] só pra segurar a vaga? Se ele disser não, me manda um SMS e eu cancelo, sem estresse."
+                      "Claro, faz todo sentido! A nossa agenda costuma encher bem rápido para semana que vem, então eu posso deixar o dia [Dia] pré-reservado para garantir sua vaga. Se a resposta for não, é só me avisar que eu cancelo, sem pressão nenhuma."
                     </p>
                   </div>
                 </div>
@@ -196,14 +196,14 @@ export default function PlaybookPage() {
               
               <div>
                 <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Clock size={14} /> The "Ghosted" Follow-Up
+                  <Clock size={14} /> The Follow-Up (Ghosted)
                 </p>
                 <div className="space-y-2">
                   <p className="text-sm text-zinc-700 bg-sky-50 p-3 rounded-lg border border-sky-100 italic">
-                    "Hi [Name]! This is [Your Name] from Star Cleaning ✨ Just sent over your estimate. Imagine not having to clean this weekend! Have 2 mins to chat about it?"
+                    "Hi [Name], this is [Name] with Star Cleaning! I just sent your estimate over to your email. Let me know if you have any questions or if you'd like to secure a spot on our schedule for next week. Have a great day!"
                   </p>
                   <p className="text-sm text-zinc-700 bg-zinc-50 p-3 rounded-lg border border-zinc-200 italic">
-                    "Oi [Nome]! Aqui é a [Seu Nome] da Star Cleaning ✨ Acabei de enviar seu orçamento. Imagina não ter que limpar a casa esse fds! Tem 2 minutinhos pra gente falar?"
+                    "Oi [Nome]! Aqui é a [Seu Nome] da Star Cleaning. Acabei de enviar o orçamento pro seu email. Me avise se tiver alguma dúvida ou se quiser garantir uma vaga na nossa agenda para a próxima semana. Tenha um ótimo dia!"
                   </p>
                 </div>
               </div>
