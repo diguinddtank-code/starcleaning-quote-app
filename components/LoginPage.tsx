@@ -3,13 +3,15 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { supabase, hasSupabase } from '@/lib/supabase';
-import { Lock, Mail } from 'lucide-react';
+import { Lock, Mail, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isSignUp, setIsSignUp] = useState(false);
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -21,6 +23,7 @@ export function LoginPage() {
 
     setLoading(true);
     setError(null);
+    setSuccessMsg(null);
 
     try {
       if (isSignUp) {
@@ -29,7 +32,8 @@ export function LoginPage() {
           password,
         });
         if (error) throw error;
-        alert('Check your email for the confirmation link!');
+        setSuccessMsg('Account created successfully! Please check your email for the confirmation link.');
+        setPassword(''); // Clear password for security
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -44,10 +48,21 @@ export function LoginPage() {
     }
   };
 
+  const toggleMode = () => {
+    setIsSignUp(!isSignUp);
+    setError(null);
+    setSuccessMsg(null);
+  };
+
   return (
     <div className="min-h-screen bg-zinc-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center mb-6">
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex justify-center mb-6"
+        >
           <Image 
             src="https://img1.wsimg.com/isteam/ip/97a5d835-7b16-4991-b3c6-3d6956b6b82b/ESBOC%CC%A7O-STAR-CLEANING_full.png" 
             alt="Star Cleaning SC" 
@@ -57,23 +72,66 @@ export function LoginPage() {
             referrerPolicy="no-referrer"
             priority
           />
+        </motion.div>
+        
+        <div className="h-16 relative overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={isSignUp ? 'signup-title' : 'signin-title'}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 flex flex-col items-center justify-center"
+            >
+              <h2 className="text-center text-3xl font-extrabold text-zinc-900 tracking-tight">
+                {isSignUp ? 'Create an Account' : 'Welcome Back'}
+              </h2>
+              <p className="mt-2 text-center text-sm text-zinc-600">
+                Enterprise Quote Management
+              </p>
+            </motion.div>
+          </AnimatePresence>
         </div>
-        <h2 className="mt-2 text-center text-3xl font-extrabold text-zinc-900 tracking-tight">
-          Welcome Back
-        </h2>
-        <p className="mt-2 text-center text-sm text-zinc-600">
-          Enterprise Quote Management
-        </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-xl shadow-zinc-200/50 sm:rounded-2xl sm:px-10 border border-zinc-200">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="bg-white py-8 px-4 shadow-xl shadow-zinc-200/50 sm:rounded-2xl sm:px-10 border border-zinc-200"
+        >
           <form className="space-y-6" onSubmit={handleAuth}>
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
+            <AnimatePresence mode="sync">
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="bg-red-50 border border-red-200 flex items-start gap-3 text-red-700 px-4 py-3 rounded-lg text-sm">
+                    <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                    <p>{error}</p>
+                  </div>
+                </motion.div>
+              )}
+
+              {successMsg && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="bg-green-50 border border-green-200 flex items-start gap-3 text-green-800 px-4 py-3 rounded-lg text-sm">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                    <p>{successMsg}</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             
             <div>
               <label className="block text-sm font-medium text-zinc-700">Email address</label>
@@ -113,9 +171,20 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
               >
-                {loading ? 'Authenticating...' : (isSignUp ? 'Create Account' : 'Sign In')}
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={isSignUp ? 'btn-signup' : 'btn-signin'}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    {isSignUp ? 'Create Account' : 'Sign In'}
+                  </motion.span>
+                </AnimatePresence>
               </button>
             </div>
           </form>
@@ -134,14 +203,25 @@ export function LoginPage() {
 
             <div className="mt-6">
               <button
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="w-full flex justify-center py-2.5 px-4 border border-zinc-300 rounded-lg shadow-sm text-sm font-medium text-zinc-700 bg-white hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-colors"
+                type="button"
+                onClick={toggleMode}
+                className="w-full flex justify-center py-2.5 px-4 border border-zinc-300 rounded-lg shadow-sm text-sm font-medium text-zinc-700 bg-white hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-colors active:scale-[0.98]"
               >
-                {isSignUp ? 'Sign in instead' : 'Create a new account'}
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={isSignUp ? 'toggle-signin' : 'toggle-signup'}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    {isSignUp ? 'Sign in instead' : 'Create a new account'}
+                  </motion.span>
+                </AnimatePresence>
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
