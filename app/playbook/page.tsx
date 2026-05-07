@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 'use client';
 
 import { BookOpen, PhoneCall, Handshake, ShieldAlert, MessageCircle, AlertCircle, Heart, Clock, Sparkles } from 'lucide-react';

@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 'use client';
 
 import { useQuote } from '@/context/QuoteContext';
@@ -265,7 +266,7 @@ export default function CalculatorPage() {
             <div className="bg-sky-50 border border-sky-100 rounded-xl p-4 mt-4 text-sm animate-in fade-in duration-300">
               <h3 className="font-bold text-sky-900 mb-2 flex items-center gap-2">
                 <BookOpen size={16} /> 
-                What's included in {quote.serviceType === 'move' ? 'Move In/Out' : quote.serviceType.charAt(0).toUpperCase() + quote.serviceType.slice(1)}?
+                What&apos;s included in {quote.serviceType === 'move' ? 'Move In/Out' : quote.serviceType.charAt(0).toUpperCase() + quote.serviceType.slice(1)}?
               </h3>
               <ul className="space-y-1.5 text-sky-800">
                 {serviceDescriptions[quote.serviceType].map((item, i) => (
