@@ -17,7 +17,7 @@ export default function DashboardPage() {
   const recentQuotes = savedQuotes.slice(0, 3);
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
+    <div className="max-w-6xl mx-auto p-4 md:p-8 pb-24 md:pb-8 space-y-8">
       <header className="mb-8 border-b border-zinc-200 pb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 tracking-tight">Dashboard</h1>
         <p className="text-sm text-zinc-500 mt-1">Welcome to Star Cleaning SC Estimate System.</p>

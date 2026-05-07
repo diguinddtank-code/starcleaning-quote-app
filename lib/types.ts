@@ -1,4 +1,5 @@
 export type ServiceType = 'residential' | 'deep' | 'move' | 'vacation' | 'commercial' | 'construction';
+export type ServiceFrequency = 'one-time' | 'weekly' | 'bi-weekly' | 'monthly';
 
 export interface PricingSettings {
   basePrice: number;
@@ -27,6 +28,7 @@ export interface QuoteState {
   baths: number;
   halfBaths: number;
   serviceType: ServiceType;
+  frequency: ServiceFrequency;
   selectedExtras: string[];
 }
 

@@ -22,6 +22,7 @@ const defaultQuote: QuoteState = {
   baths: 2,
   halfBaths: 0,
   serviceType: 'residential',
+  frequency: 'one-time',
   selectedExtras: [],
 };
 
@@ -52,6 +53,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
               baths: q.baths,
               halfBaths: q.half_baths,
               serviceType: q.service_type,
+              frequency: q.frequency || 'one-time',
               selectedExtras: q.selected_extras || [],
               total: Number(q.total),
               customerName: q.customer_name,
@@ -63,6 +65,44 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
               createdByEmail: q.created_by_email,
             }));
             setSavedQuotes(mappedQuotes);
+          }
+
+          // Automatically sync local data if any exists
+          const localData = localStorage.getItem('starCleaningHistory');
+          if (localData) {
+            try {
+              const localQuotes: SavedQuote[] = JSON.parse(localData);
+              if (localQuotes.length > 0) {
+                const { data: userAuth } = await supabase.auth.getUser();
+                const user = userAuth?.user;
+                
+                const quotesToInsert = localQuotes.map(quote => ({
+                  created_at: quote.date || new Date().toISOString(),
+                  sq_ft: quote.sqFt,
+                  beds: quote.beds,
+                  baths: quote.baths,
+                  half_baths: quote.halfBaths,
+                  service_type: quote.serviceType,
+                  frequency: quote.frequency || 'one-time',
+                  selected_extras: quote.selectedExtras || [],
+                  total: quote.total,
+                  customer_name: quote.customerName || null,
+                  customer_phone: quote.customerPhone || null,
+                  status: quote.status || 'new',
+                  created_by_email: user?.email || null,
+                }));
+
+                const { error: syncError } = await supabase.from('quotes').insert(quotesToInsert);
+                if (!syncError) {
+                  localStorage.removeItem('starCleaningHistory');
+                  console.log('Successfully synced local quotes to Supabase!');
+                } else {
+                  console.error('Error syncing local quotes', syncError);
+                }
+              }
+            } catch (e) {
+              console.error('Failed to parse or sync local quotes', e);
+            }
           }
         } catch (e) {
           console.error('Failed to load quotes from Supabase', e);
@@ -82,6 +122,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
                 baths: q.baths,
                 halfBaths: q.half_baths,
                 serviceType: q.service_type,
+                frequency: q.frequency || 'one-time',
                 selectedExtras: q.selected_extras || [],
                 total: Number(q.total),
                 customerName: q.customer_name,
@@ -108,6 +149,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
                 baths: q.baths,
                 halfBaths: q.half_baths,
                 serviceType: q.service_type,
+                frequency: q.frequency || 'one-time',
                 selectedExtras: q.selected_extras || [],
                 total: Number(q.total),
                 customerName: q.customer_name,
@@ -175,6 +217,14 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
+    if (quote.frequency === 'weekly') {
+      total *= 0.80;
+    } else if (quote.frequency === 'bi-weekly') {
+      total *= 0.85;
+    } else if (quote.frequency === 'monthly') {
+      total *= 0.90;
+    }
+
     return Math.round(total);
   };
 
@@ -194,6 +244,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
           baths: quote.baths,
           half_baths: quote.halfBaths,
           service_type: quote.serviceType,
+          frequency: quote.frequency,
           selected_extras: quote.selectedExtras,
           total: totalPrice,
           customer_name: customerName || null,

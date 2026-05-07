@@ -21,7 +21,7 @@ export function Stepper({ label, value, onChange, min = 0, max = 9999, step = 1 
   };
 
   return (
-    <div className="flex items-center justify-between p-4 bg-white border border-zinc-200 rounded-xl shadow-sm">
+    <div className="flex items-center justify-between p-4 bg-white border-2 border-zinc-200 hover:border-zinc-300 rounded-xl transition-all duration-200">
       <span className="font-semibold text-sm text-zinc-700">{label}</span>
       <div className="flex items-center gap-3">
         <button

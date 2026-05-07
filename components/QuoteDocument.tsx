@@ -97,7 +97,7 @@ export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b-2 border-zinc-800">
           <div>
             <h4 className="text-lg font-bold text-sky-700">{serviceNames[quote.serviceType]} Cleaning</h4>
-            <p className="text-xs text-zinc-500 mt-0.5">Comprehensive cleaning tailored to your property specifications.</p>
+            <p className="text-xs text-zinc-500 mt-0.5">Comprehensive cleaning tailored to your property. Frequency: <span className="uppercase font-bold">{quote.frequency || 'one-time'}</span></p>
           </div>
           <div className="flex gap-4 text-sm">
             <div className="text-left sm:text-right">

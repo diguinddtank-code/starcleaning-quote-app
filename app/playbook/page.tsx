@@ -182,6 +182,28 @@ export default function PlaybookPage() {
                 </div>
               </div>
 
+              {/* Objeção 3 */}
+              <div className="space-y-3 mt-8 border-t border-zinc-100 pt-8">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertCircle className="text-red-500 shrink-0" size={18} />
+                  <h3 className="font-bold text-zinc-900 text-lg">"Why are other quotes so different/cheaper?"</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 border-l-4 border-l-sky-500">
+                    <p className="text-xs font-bold text-slate-400 mb-2">🇺🇸 ENGLISH RESPONSE</p>
+                    <p className="text-sm text-zinc-700 italic">
+                      "That's a great question! Often, cheaper quotes cover only a basic surface wipe. Our quotes reflect a comprehensive service with trained teams, full insurance, and high-quality supplies. For example, our Deep Clean targets areas like baseboards and ceiling fans that others skip. It ensures you get true peace of mind without hidden fees."
+                    </p>
+                  </div>
+                  <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 border-l-4 border-l-sky-500">
+                    <p className="text-xs font-bold text-zinc-400 mb-2">🇧🇷 RESPOSTA EM PT</p>
+                    <p className="text-sm text-zinc-700 italic">
+                      "Ótima pergunta! Muitas vezes, orçamentos mais baratos cobrem apenas uma limpeza superficial básica. Nossos preços refletem um serviço completo com equipes treinadas, seguro total e produtos de alta qualidade. Por exemplo, nosso Deep Clean inclui rodapés e ventiladores de teto que muitos ignoram. Isso garante que você tenha verdadeira paz de espírito sem taxas escondidas."
+                    </p>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </section>
         </div>
