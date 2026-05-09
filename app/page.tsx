@@ -2,45 +2,151 @@
 
 import Link from 'next/link';
 import { useLead } from '@/context/LeadContext';
-import { Users, PlusCircle, History, ArrowRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { useQuote } from '@/context/QuoteContext';
+import { useAuth } from '@/context/AuthContext';
+import { 
+  Users, PlusCircle, History, ArrowRight, 
+  BarChart2, Calculator, BookOpen, 
+  CheckCircle, FileText, Activity, 
+  DollarSign, TrendingUp, Inbox
+} from 'lucide-react';
+import { motion } from 'motion/react';
 
 export default function DashboardPage() {
   const { leads } = useLead();
+  const { savedQuotes } = useQuote();
+  const { user } = useAuth();
   
-  const recentLeads = leads.slice(0, 3);
+  // Metrics
+  const totalLeads = leads.length;
+  const newLeadsCount = leads.filter(l => l.ETAPA?.toLowerCase().includes('novo') || l.ETAPA?.toLowerCase() === 'new').length;
+  const negotiatingCount = leads.filter(l => l.ETAPA?.toLowerCase().includes('negociando')).length;
+  const scheduledCount = leads.filter(l => l.ETAPA?.toLowerCase().includes('agendado')).length;
+  const totalQuotesValue = savedQuotes.reduce((acc, q) => acc + (q.total || 0), 0);
+  
+  const recentLeads = [...leads]
+    .sort((a, b) => {
+      if (a.UMSG && !b.UMSG) return -1;
+      if (!a.UMSG && b.UMSG) return 1;
+      if (a.UMSG && b.UMSG) {
+        if (!isNaN(Number(a.UMSG)) && !isNaN(Number(b.UMSG))) {
+          return Number(b.UMSG) - Number(a.UMSG);
+        }
+        return new Date(b.UMSG).getTime() - new Date(a.UMSG).getTime();
+      }
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    })
+    .slice(0, 5);
+
+  const recentQuotes = [...savedQuotes]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
+  };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 pb-24 md:pb-8 space-y-8">
-      <header className="mb-8 border-b border-zinc-200 pb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 tracking-tight">Dashboard</h1>
-        <p className="text-sm text-zinc-500 mt-1">Welcome to Star Cleaning SC CRM & Estimate System.</p>
+    <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 md:pb-8 space-y-8">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
+        <div>
+          <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">
+            Bom dia{user?.email ? `, ${user.email.split('@')[0]}` : ''}.
+          </h1>
+          <p className="text-zinc-500 mt-1">Aqui está o resumo da sua operação hoje.</p>
+        </div>
+        <Link 
+          href="/estimate" 
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg transition-all shadow-sm hover:shadow"
+        >
+          <PlusCircle size={18} /> Novo Orçamento
+        </Link>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-8 flex flex-col items-center justify-center text-center space-y-4">
-          <div className="w-16 h-16 bg-sky-50 text-sky-600 rounded-full flex items-center justify-center mb-2">
-            <PlusCircle size={32} />
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        <motion.div variants={itemVariants} className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-sm">
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <Users size={20} />
+            </div>
+            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Total Leads</span>
           </div>
-          <h2 className="text-xl font-bold text-zinc-900">Create New Estimate</h2>
-          <p className="text-sm text-zinc-500 max-w-xs">
-            Generate a new cleaning quote for a client, calculate prices, and save the estimate.
-          </p>
-          <Link 
-            href="/estimate" 
-            className="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl transition-all shadow-sm hover:shadow-md"
-          >
-            Start Estimate <ArrowRight size={18} />
-          </Link>
-        </div>
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-3xl font-bold text-zinc-900">{totalLeads}</h3>
+            <span className="text-sm font-medium text-emerald-600 flex items-center"><TrendingUp size={14} className="mr-1"/> Ativos</span>
+          </div>
+        </motion.div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-8 flex flex-col space-y-6">
-          <div className="flex items-center justify-between">
+        <motion.div variants={itemVariants} className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+            <Inbox size={80} />
+          </div>
+          <div className="flex justify-between items-start mb-4 relative z-10">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Activity size={20} />
+            </div>
+            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Novos Leads</span>
+          </div>
+          <div className="flex items-baseline gap-2 relative z-10">
+            <h3 className="text-3xl font-bold text-zinc-900">{newLeadsCount}</h3>
+            <span className="text-sm font-medium text-zinc-500">na caixa de entrada</span>
+          </div>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+            <CheckCircle size={80} />
+          </div>
+          <div className="flex justify-between items-start mb-4 relative z-10">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <CheckCircle size={20} />
+            </div>
+            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Agendados</span>
+          </div>
+          <div className="flex items-baseline gap-2 relative z-10">
+            <h3 className="text-3xl font-bold text-zinc-900">{scheduledCount}</h3>
+            <span className="text-sm font-medium text-zinc-500">convertidos</span>
+          </div>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-sm">
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+              <FileText size={20} />
+            </div>
+            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Estimates</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-3xl font-bold text-zinc-900">{savedQuotes.length}</h3>
+            <span className="text-sm font-medium text-zinc-500">gerados</span>
+          </div>
+        </motion.div>
+      </motion.div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <motion.div 
+          className="bg-white border text-left border-zinc-200 rounded-2xl shadow-sm p-6"
+        >
+          <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-              <History className="text-sky-500" size={20} /> Recent Leads
+              <History className="text-zinc-400" size={20} /> Leads Recentes
             </h2>
-            <Link href="/leads" className="text-sm font-medium text-sky-600 hover:text-sky-700">
-              View All
+            <Link href="/leads" className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 group">
+              Ver Funil <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
           
@@ -50,31 +156,132 @@ export default function DashboardPage() {
                 <Link
                   href={`/leads/${lead.id}`}
                   key={lead.id} 
-                  className="flex items-center justify-between p-3 rounded-lg border border-zinc-100 bg-zinc-50 hover:bg-sky-50 hover:border-sky-100 cursor-pointer transition-colors group"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-zinc-100 bg-zinc-50 hover:bg-sky-50 hover:border-sky-100 cursor-pointer transition-colors group gap-3"
                 >
-                  <div className="flex flex-col">
-                    <p className="text-sm font-bold text-zinc-900 group-hover:text-sky-900">{lead.Nome || 'Unnamed Lead'}</p>
-                    <p className="text-[11px] text-zinc-500">{lead.Data ? new Date(lead.Data).toLocaleDateString() : 'N/A'}</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-white border border-zinc-200 flex items-center justify-center text-zinc-500 font-bold shadow-sm">
+                      {(lead.Nome?.[0] || 'U').toUpperCase()}
+                    </div>
+                    <div className="flex flex-col">
+                      <p className="text-sm font-bold text-zinc-900 group-hover:text-sky-900 transition-colors">
+                        {lead.Nome || 'Sem Nome'}
+                      </p>
+                      <p className="text-xs text-zinc-500">{lead.Telefone || lead.Email || 'Sem contato'}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs font-semibold text-zinc-700">{lead.Cidade || 'N/A'}</p>
-                    <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold mt-1 uppercase ${
-                      lead.ETAPA?.toLowerCase().includes('new') ? 'bg-blue-100 text-blue-700' : 'bg-zinc-200 text-zinc-700'
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center">
+                    <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                      lead.ETAPA?.toLowerCase().includes('novo') ? 'bg-emerald-100 text-emerald-700' : 
+                      lead.ETAPA?.toLowerCase().includes('agendado') ? 'bg-sky-100 text-sky-700' :
+                      lead.ETAPA?.toLowerCase().includes('negociando') ? 'bg-amber-100 text-amber-700' :
+                      'bg-zinc-200 text-zinc-700'
                     }`}>
-                      {lead.ETAPA || 'New'}
+                      {lead.ETAPA || 'Novo'}
+                    </span>
+                    <span className="text-[11px] text-zinc-400 mt-1 hidden sm:block">
+                      {lead.Cidade ? lead.Cidade : (lead.Data ? new Date(lead.Data).toLocaleDateString() : '')}
                     </span>
                   </div>
                 </Link>
               ))}
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center space-y-2 py-8">
+            <div className="flex-1 flex flex-col items-center justify-center text-center space-y-3 py-10 border-2 border-dashed border-zinc-100 rounded-xl">
               <Users className="text-zinc-300" size={32} />
-              <p className="text-sm text-zinc-500">No leads available.</p>
+              <p className="text-sm text-zinc-500">Nenhum lead disponível ainda.</p>
             </div>
           )}
-        </div>
+        </motion.div>
+
+        <motion.div 
+          className="bg-white border text-left border-zinc-200 rounded-2xl shadow-sm p-6"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+              <Calculator className="text-zinc-400" size={20} /> Orçamentos Recentes
+            </h2>
+            <Link href="/history" className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 group">
+              Ver Histórico <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+          
+          {recentQuotes.length > 0 ? (
+            <div className="space-y-3">
+              {recentQuotes.map((quote) => (
+                <Link
+                  href={`/history`}
+                  key={quote.id} 
+                  className="flex items-center justify-between p-4 rounded-xl border border-zinc-100 bg-zinc-50 hover:bg-sky-50 hover:border-sky-100 cursor-pointer transition-colors group gap-3"
+                >
+                  <div className="flex flex-col flex-1">
+                    <p className="text-sm font-bold text-zinc-900 group-hover:text-sky-900 transition-colors">
+                      {quote.customerName || 'Cliente sem nome'}
+                    </p>
+                    <p className="text-xs text-zinc-500 flex items-center gap-1.5 mt-0.5">
+                      <span className="capitalize">{quote.serviceType}</span>
+                      <span>•</span>
+                      <span className="capitalize">{quote.frequency}</span>
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <p className="text-sm font-bold text-zinc-900 flex items-center">
+                      <DollarSign size={14} className="text-zinc-400" />
+                      {quote.total.toLocaleString()}
+                    </p>
+                    <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold uppercase mt-1 ${
+                      quote.status === 'scheduled' ? 'bg-sky-100 text-sky-700' :
+                      quote.status === 'contacted' ? 'bg-amber-100 text-amber-700' :
+                      quote.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                      'bg-zinc-200 text-zinc-700'
+                    }`}>
+                      {quote.status || 'new'}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center space-y-3 py-10 border-2 border-dashed border-zinc-100 rounded-xl">
+              <FileText className="text-zinc-300" size={32} />
+              <p className="text-sm text-zinc-500">Nenhum orçamento gerado ainda.</p>
+              <Link href="/estimate" className="mt-2 text-sm text-sky-600 hover:underline">
+                Criar o primeiro
+              </Link>
+            </div>
+          )}
+        </motion.div>
       </div>
+      
+      {/* Quick Action Grid */}
+      <h2 className="text-xl font-bold text-zinc-900 pt-4">Acesso Rápido</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Link href="/estimate" className="bg-white p-4 rounded-xl border border-zinc-200 shadow-sm hover:shadow hover:border-sky-300 transition-all flex flex-col items-center justify-center text-center gap-2 group">
+          <div className="w-12 h-12 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Calculator size={24} />
+          </div>
+          <span className="text-sm font-semibold text-zinc-900">Novo Orçamento</span>
+        </Link>
+        <Link href="/leads" className="bg-white p-4 rounded-xl border border-zinc-200 shadow-sm hover:shadow hover:border-amber-300 transition-all flex flex-col items-center justify-center text-center gap-2 group">
+          <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Inbox size={24} />
+          </div>
+          <span className="text-sm font-semibold text-zinc-900">Funil de Vendas</span>
+        </Link>
+        <Link href="/kpi" className="bg-white p-4 rounded-xl border border-zinc-200 shadow-sm hover:shadow hover:border-emerald-300 transition-all flex flex-col items-center justify-center text-center gap-2 group">
+          <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <BarChart2 size={24} />
+          </div>
+          <span className="text-sm font-semibold text-zinc-900">KPIs e Métricas</span>
+        </Link>
+        <Link href="/playbook" className="bg-white p-4 rounded-xl border border-zinc-200 shadow-sm hover:shadow hover:border-purple-300 transition-all flex flex-col items-center justify-center text-center gap-2 group">
+          <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <BookOpen size={24} />
+          </div>
+          <span className="text-sm font-semibold text-zinc-900">Sales Playbook</span>
+        </Link>
+      </div>
+
     </div>
   );
 }
+
