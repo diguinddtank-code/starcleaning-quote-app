@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Calculator, History, Settings, LogOut, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Calculator, History, Settings, LogOut, BookOpen, BarChart2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 
@@ -13,6 +13,7 @@ export function Sidebar() {
 
   const navItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { name: 'KPIs', href: '/kpi', icon: BarChart2 },
     { name: 'New Estimate', href: '/estimate', icon: Calculator },
     { name: 'Leads', href: '/leads', icon: History },
     { name: 'Sales Playbook', href: '/playbook', icon: BookOpen },

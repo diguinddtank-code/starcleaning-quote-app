@@ -10,17 +10,20 @@ interface ServiceCardProps {
   icon: ReactNode;
   selected: boolean;
   onClick: () => void;
+  disabled?: boolean;
 }
 
-export function ServiceCard({ title, description, icon, selected, onClick }: ServiceCardProps) {
+export function ServiceCard({ title, description, icon, selected, onClick, disabled }: ServiceCardProps) {
   return (
     <button
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       className={cn(
-        "flex flex-col p-4 sm:p-5 text-left rounded-xl border-2 transition-all duration-200 h-full w-full hover:-translate-y-1",
-        selected 
+        "flex flex-col p-4 sm:p-5 text-left rounded-xl border-2 transition-all duration-200 h-full w-full",
+        disabled ? "opacity-50 cursor-not-allowed bg-zinc-50 border-zinc-200 grayscale" : "hover:-translate-y-1",
+        selected && !disabled
           ? "border-sky-500 bg-sky-50 shadow-sm shadow-sky-500/20 ring-1 ring-sky-500/20" 
-          : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50 hover:shadow-sm"
+          : !disabled && "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50 hover:shadow-sm"
       )}
     >
       <div className={cn(

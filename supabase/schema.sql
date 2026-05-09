@@ -1,22 +1,55 @@
+-- Create Leads Table
+CREATE TABLE IF NOT EXISTS leads (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  "Nome" TEXT,
+  "Email" TEXT,
+  "Telefone" TEXT,
+  "ZIP" TEXT,
+  "Quartos" TEXT,
+  "Banheiros" TEXT,
+  "Service" TEXT,
+  "Frequencia" TEXT,
+  "Inicial" TEXT,
+  "Final" TEXT,
+  "Cidade" TEXT,
+  "Data" TEXT,
+  "Agendado" TEXT,
+  "ETAPA" TEXT,
+  "OBSERVACOES" TEXT,
+  "FOLLOWUP" TEXT,
+  "UMSG" TEXT,
+  created_by_email TEXT
+);
+
 -- Create Quotes Table
 CREATE TABLE IF NOT EXISTS quotes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  sq_ft INTEGER NOT NULL,
-  beds INTEGER NOT NULL,
-  baths INTEGER NOT NULL,
-  half_baths INTEGER NOT NULL,
-  service_type TEXT NOT NULL,
-  selected_extras TEXT[] DEFAULT '{}',
-  total NUMERIC NOT NULL,
+  lead_id UUID,
   customer_name TEXT,
   customer_phone TEXT,
   customer_email TEXT,
-  customer_address TEXT,
-  notes TEXT,
-  status TEXT DEFAULT 'new',
-  created_by_email TEXT
+  sq_ft INTEGER,
+  beds INTEGER,
+  baths INTEGER,
+  half_baths INTEGER,
+  service_type TEXT,
+  frequency TEXT,
+  total NUMERIC,
+  status TEXT DEFAULT 'new'
 );
+
+ALTER TABLE leads DISABLE ROW LEVEL SECURITY;
+ALTER TABLE quotes DISABLE ROW LEVEL SECURITY;
+
+-- Create a bucket for storing quote PDFs
+INSERT INTO storage.buckets (id, name, public) VALUES ('quote_pdfs', 'quote_pdfs', true) ON CONFLICT (id) DO NOTHING;
+
+-- Enable public access to the quote_pdfs bucket
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'quote_pdfs');
+CREATE POLICY "Authenticated users can upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'quote_pdfs' AND auth.role() = 'authenticated');
 
 -- Create Settings Table (Single row for global app settings)
 CREATE TABLE IF NOT EXISTS settings (
@@ -28,16 +61,32 @@ CREATE TABLE IF NOT EXISTS settings (
   half_bath_price NUMERIC NOT NULL,
   deep_clean_multiplier NUMERIC NOT NULL,
   move_in_out_multiplier NUMERIC NOT NULL,
+  vacation_multiplier NUMERIC DEFAULT 1.2,
+  commercial_multiplier NUMERIC DEFAULT 1.0,
+  construction_multiplier NUMERIC DEFAULT 2.5,
+  weekly_multiplier NUMERIC DEFAULT 0.8,
+  bi_weekly_multiplier NUMERIC DEFAULT 0.85,
+  monthly_multiplier NUMERIC DEFAULT 0.9,
   extras JSONB NOT NULL
 );
 
 -- Insert default settings if they don't exist
-INSERT INTO settings (id, base_price, price_per_sq_ft, bed_price, bath_price, half_bath_price, deep_clean_multiplier, move_in_out_multiplier, extras)
+INSERT INTO settings (
+  id, base_price, price_per_sq_ft, bed_price, bath_price, half_bath_price, 
+  deep_clean_multiplier, move_in_out_multiplier, 
+  vacation_multiplier, commercial_multiplier, construction_multiplier,
+  weekly_multiplier, bi_weekly_multiplier, monthly_multiplier,
+  extras
+)
 VALUES (
-  1, 100, 0.05, 20, 30, 15, 1.5, 2.0,
-  '{"oven": 30, "fridge": 30, "windows": 50, "laundry": 20, "cabinets": 40, "garage": 50}'::jsonb
+  1, 50, 0.04, 15, 20, 10, 
+  2.0, 2.5,
+  1.2, 1.0, 2.5,
+  0.7, 0.8, 0.9,
+  '{"oven": 40, "fridge": 60, "windows": 85, "laundry": 20, "cabinets": 100, "garage": 50}'::jsonb
 ) ON CONFLICT (id) DO NOTHING;
 
 -- Enable Realtime for both tables
+ALTER PUBLICATION supabase_realtime ADD TABLE leads;
 ALTER PUBLICATION supabase_realtime ADD TABLE quotes;
 ALTER PUBLICATION supabase_realtime ADD TABLE settings;

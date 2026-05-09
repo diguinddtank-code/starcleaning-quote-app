@@ -1,40 +1,79 @@
 'use client';
 
-import { useQuote } from '@/context/QuoteContext';
-import { useSettings } from '@/context/SettingsContext';
-import { Trash2, User, Phone, Calendar, DollarSign, FileText, Printer, CheckCircle2, MoreHorizontal, Mail, MapPin, Edit3, X, Save } from 'lucide-react';
+import { useLead } from '@/context/LeadContext';
+import { User, Phone, Calendar, Mail, MapPin, Edit3, Trash2, X, Search, FileText, KanbanSquare, LayoutList, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-import { SavedQuote } from '@/lib/types';
-import { QuoteDocument } from '@/components/QuoteDocument';
+import { Lead } from '@/lib/types';
 import { motion, AnimatePresence } from 'motion/react';
+import Link from 'next/link';
 
 export default function LeadsPage() {
-  const { savedQuotes, deleteQuote, updateLead } = useQuote();
-  const { settings } = useSettings();
+  const { leads, deleteLead, updateLead } = useLead();
+  const [filterQuery, setFilterQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [statusFilter, setStatusFilter] = useState<string>('Todos');
   
-  const [selectedQuote, setSelectedQuote] = useState<SavedQuote | null>(null);
-  const [editingLead, setEditingLead] = useState<SavedQuote | null>(null);
-  
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  
-  const [editForm, setEditForm] = useState<Partial<SavedQuote>>({});
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [editForm, setEditForm] = useState<Partial<Lead>>({});
   const [isSaving, setIsSaving] = useState(false);
 
-  const filteredQuotes = savedQuotes.filter(q => {
-    if (filterStatus === 'all') return true;
-    return (q.status || 'new') === filterStatus;
-  });
+  const getKanbanStage = (status?: string) => {
+    const s = status?.trim()?.toLowerCase() || '';
+    if (s === 'agendado') return 'Agendado';
+    if (s === 'primeiro contato') return 'Primeiro Contato';
+    if (s === 'negociando') return 'Negociando';
+    if (s === 'não responde' || s === 'nao responde') return 'Não Responde';
+    if (s === 'sem interesse') return 'Sem Interesse';
+    if (s === 'novo' || s === 'novos' || s === 'nova' || s === 'new' || s === '') return 'Novo';
+    
+    // Fallbacks just in case
+    if (s.includes('agendado')) return 'Agendado';
+    if (s.includes('contato')) return 'Primeiro Contato';
+    if (s.includes('nego')) return 'Negociando';
+    if (s.includes('respond')) return 'Não Responde';
+    if (s.includes('interes')) return 'Sem Interesse';
+    return 'Outros';
+  };
 
-  const handleEditClick = (quote: SavedQuote) => {
-    setEditingLead(quote);
-    setEditForm({
-      customerName: quote.customerName || '',
-      customerPhone: quote.customerPhone || '',
-      customerEmail: quote.customerEmail || '',
-      customerAddress: quote.customerAddress || '',
-      notes: quote.notes || '',
-      status: quote.status || 'new',
+  const kanbanColumns = ['Novo', 'Primeiro Contato', 'Negociando', 'Agendado', 'Não Responde', 'Sem Interesse', 'Outros'];
+
+  const filteredLeads = leads
+    .filter(l => {
+      if (statusFilter !== 'Todos' && getKanbanStage(l.ETAPA) !== statusFilter) return false;
+      if (!filterQuery) return true;
+      const lowerQuery = filterQuery.toLowerCase();
+      return (
+        l.Nome?.toLowerCase().includes(lowerQuery) ||
+        l.Email?.toLowerCase().includes(lowerQuery) ||
+        l.Telefone?.toLowerCase().includes(lowerQuery) ||
+        l.ETAPA?.toLowerCase().includes(lowerQuery) ||
+        l.UMSG?.toLowerCase().includes(lowerQuery) ||
+        l.OBSERVACOES?.toLowerCase().includes(lowerQuery)
+      );
+    })
+    .sort((a, b) => {
+      if (a.UMSG && !b.UMSG) return -1;
+      if (!a.UMSG && b.UMSG) return 1;
+      if (a.UMSG && b.UMSG) {
+        const dateA = new Date(a.UMSG).getTime();
+        const dateB = new Date(b.UMSG).getTime();
+        if (!isNaN(dateA) && !isNaN(dateB)) {
+          return dateB - dateA;
+        }
+        return b.UMSG.localeCompare(a.UMSG);
+      }
+      const timeA = a.updated_at ? new Date(a.updated_at).getTime() : (a.created_at ? new Date(a.created_at).getTime() : 0);
+      const timeB = b.updated_at ? new Date(b.updated_at).getTime() : (b.created_at ? new Date(b.created_at).getTime() : 0);
+      return timeB - timeA;
     });
+
+  const handleStatusChange = async (leadId: string, newStatus: string) => {
+    await updateLead(leadId, { ETAPA: newStatus });
+  };
+
+  const handleEditClick = (lead: Lead) => {
+    setEditingLead(lead);
+    setEditForm({ ...lead });
   };
 
   const handleSaveLead = async () => {
@@ -46,267 +85,360 @@ export default function LeadsPage() {
   };
 
   const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'new': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'contacted': return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'scheduled': return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'completed': return 'bg-green-100 text-green-700 border-green-200';
-      case 'lost': return 'bg-zinc-100 text-zinc-600 border-zinc-200';
-      default: return 'bg-blue-100 text-blue-700 border-blue-200';
-    }
+    const s = status?.toLowerCase() || '';
+    if (s.includes('agendado')) return 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100';
+    if (s.includes('novo')) return 'bg-emerald-500 text-white border-emerald-600 shadow-sm shadow-emerald-500/30 hover:bg-emerald-600';
+    if (s.includes('sem interesse') || s.includes('not interest') || s.includes('perdido')) return 'bg-zinc-100 text-zinc-600 border-zinc-200 hover:bg-zinc-200';
+    if (s.includes('contato') || s.includes('stand') || s.includes('nego') || s.includes('responde')) return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
+    return 'bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100';
   };
 
-  const statusLabels = {
-    new: 'New Lead',
-    contacted: 'Contacted',
-    scheduled: 'Scheduled',
-    completed: 'Completed',
-    lost: 'Lost',
-  };
+  const leadsByStage = kanbanColumns.reduce((acc, stage) => {
+    acc[stage] = filteredLeads.filter(l => getKanbanStage(l.ETAPA) === stage).sort((a, b) => {
+      // Sort by UMSG, fallback to updated_at
+      if (a.UMSG && !b.UMSG) return -1;
+      if (!a.UMSG && b.UMSG) return 1;
+      if (a.UMSG && b.UMSG) {
+        const dateA = new Date(a.UMSG).getTime();
+        const dateB = new Date(b.UMSG).getTime();
+        if (!isNaN(dateA) && !isNaN(dateB)) {
+          return dateB - dateA;
+        }
+        return b.UMSG.localeCompare(a.UMSG);
+      }
+      const timeA = a.updated_at ? new Date(a.updated_at).getTime() : (a.created_at ? new Date(a.created_at).getTime() : 0);
+      const timeB = b.updated_at ? new Date(b.updated_at).getTime() : (b.created_at ? new Date(b.created_at).getTime() : 0);
+      return timeB - timeA;
+    });
+    return acc;
+  }, {} as Record<string, Lead[]>);
+
+  const totalLeads = leads.length;
+  const newLeadsCount = leads.filter(l => getKanbanStage(l.ETAPA) === 'Novo').length;
+  const activeCount = leads.filter(l => ['Primeiro Contato', 'Negociando', 'Agendado'].includes(getKanbanStage(l.ETAPA))).length;
 
   return (
-    <div className="max-w-5xl mx-auto p-4 md:p-8 pb-24 md:pb-8 space-y-6">
-      <header className="mb-6 border-b border-zinc-200 pb-6 print:hidden flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 tracking-tight">Lead Management</h1>
-          <p className="text-sm text-zinc-500 mt-1">Manage generated estimates and track customer communication.</p>
+    <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 md:pb-8 space-y-6">
+      <header className="mb-8 space-y-6 block">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 tracking-tight">Lead CRM</h1>
+            <p className="text-sm text-zinc-500 mt-1">Gerencie todos os seus contatos e orçamentos em um lugar.</p>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-3 md:gap-6">
+            <div className="bg-white p-3 md:p-4 rounded-xl border border-zinc-200 shadow-sm flex flex-col items-center justify-center min-w-[100px]">
+              <span className="text-zinc-500 text-[11px] md:text-xs font-semibold uppercase tracking-wider mb-1">Total</span>
+              <span className="text-xl md:text-2xl font-bold text-zinc-900">{totalLeads}</span>
+            </div>
+            <div className="bg-emerald-500 p-3 md:p-4 rounded-xl border border-emerald-600 shadow-sm shadow-emerald-500/20 flex flex-col items-center justify-center min-w-[100px] relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-1.5"><div className="w-1.5 h-1.5 bg-white rounded-full animate-ping opacity-75"></div></div>
+              <span className="text-emerald-50 text-[11px] md:text-xs font-semibold uppercase tracking-wider mb-1">Novos</span>
+              <span className="text-xl md:text-2xl font-bold text-white">{newLeadsCount}</span>
+            </div>
+            <div className="bg-white p-3 md:p-4 rounded-xl border border-zinc-200 shadow-sm flex flex-col items-center justify-center min-w-[100px]">
+              <span className="text-zinc-500 text-[11px] md:text-xs font-semibold uppercase tracking-wider mb-1">Ativos</span>
+              <span className="text-xl md:text-2xl font-bold text-sky-600">{activeCount}</span>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <select 
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 bg-white border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
-          >
-            <option value="all">All Leads</option>
-            <option value="new">New Leads</option>
-            <option value="contacted">Contacted</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="completed">Completed</option>
-            <option value="lost">Lost</option>
-          </select>
+
+        <div className="flex flex-col gap-3 pb-2 border-b border-zinc-200">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {['Todos', ...kanbanColumns].map(stage => (
+                <button
+                  key={stage}
+                  onClick={() => setStatusFilter(stage)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                    statusFilter === stage 
+                      ? 'bg-zinc-900 text-white shadow-md scale-105'
+                      : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300'
+                  } ${stage === 'Novo' && statusFilter !== 'Novo' ? 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : ''}`}
+                >
+                  {stage === 'Novo' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>}
+                  {stage}
+                </button>
+              ))}
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                <input 
+                  type="text" 
+                  placeholder="Buscar lead..."
+                  value={filterQuery}
+                  onChange={(e) => setFilterQuery(e.target.value)}
+                  className="pl-9 pr-4 py-2 w-full md:w-64 bg-white border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-sky-500/20 transition-all placeholder:text-zinc-400"
+                />
+              </div>
+              <div className="flex bg-zinc-100 p-1 rounded-lg border border-zinc-200">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-md flex items-center justify-center transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-zinc-900 font-bold' : 'text-zinc-500 hover:text-zinc-700'}`}
+                  title="List View"
+                >
+                  <LayoutList size={18} />
+                </button>
+                <button
+                  onClick={() => setViewMode('kanban')}
+                  className={`p-1.5 rounded-md flex items-center justify-center transition-all ${viewMode === 'kanban' ? 'bg-white shadow-sm text-zinc-900 font-bold' : 'text-zinc-500 hover:text-zinc-700'}`}
+                  title="Kanban View"
+                >
+                  <KanbanSquare size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
-      {filteredQuotes.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-zinc-200 p-12 text-center shadow-sm print:hidden">
+      {filteredLeads.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-zinc-200 p-12 text-center shadow-sm">
           <div className="w-16 h-16 bg-zinc-100 text-zinc-400 rounded-full flex items-center justify-center mx-auto mb-4">
             <User size={32} />
           </div>
           <h2 className="text-lg font-bold text-zinc-900 mb-2">No leads found</h2>
-          <p className="text-sm text-zinc-500">Estimates saved will appear here as leads.</p>
+          <p className="text-sm text-zinc-500">Wait for new leads or adjust your search.</p>
+        </div>
+      ) : viewMode === 'kanban' ? (
+        <div className="flex gap-4 overflow-x-auto pb-4 snap-x min-h-[60vh]">
+          {kanbanColumns.map(stage => {
+            const columnLeads = leadsByStage[stage] || [];
+            if (columnLeads.length === 0 && stage === 'Outros') return null;
+            return (
+              <div key={stage} className="flex flex-col min-w-[280px] w-[280px] snap-center bg-zinc-50/50 rounded-xl rounded-t-lg border border-zinc-200">
+                <div className="p-3 border-b border-zinc-200 flex items-center justify-between bg-zinc-100/50 rounded-t-lg">
+                  <h3 className="font-bold text-zinc-800 text-sm flex items-center gap-2">
+                    {stage}
+                    <span className="bg-zinc-200 text-zinc-600 text-xs px-2 py-0.5 rounded-full font-semibold">{columnLeads.length}</span>
+                  </h3>
+                </div>
+                <div className="p-3 space-y-3 flex-1 overflow-y-auto">
+                  {columnLeads.map(lead => (
+                    <div key={lead.id} className="bg-white border border-zinc-200 p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow group relative flex flex-col gap-2">
+                      <div className="flex justify-between items-start gap-2">
+                        <Link href={`/leads/${lead.id}`} className="font-bold text-zinc-900 text-sm hover:text-sky-600 truncate">{lead.Nome || 'Unnamed Lead'}</Link>
+                        <button 
+                          onClick={() => handleEditClick(lead)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-zinc-400 hover:text-sky-600 hover:bg-sky-50 rounded"
+                        >
+                          <Edit3 size={14} />
+                        </button>
+                      </div>
+                      
+                      <div className="flex flex-col gap-1 text-xs text-zinc-500">
+                        {lead.Telefone && <span className="flex items-center gap-1.5"><Phone size={12} className="text-zinc-400 shrink-0" /> <span className="truncate">{lead.Telefone}</span></span>}
+                        {lead.Email && <span className="flex items-center gap-1.5"><Mail size={12} className="text-zinc-400 shrink-0" /> <span className="truncate">{lead.Email}</span></span>}
+                      </div>
+
+                      {lead.UMSG && (
+                        <div className="mt-1 text-[11px] text-amber-700 bg-amber-50 p-1.5 rounded border border-amber-100 line-clamp-2" title={lead.UMSG}>
+                          <span className="font-semibold">Last msg:</span> {lead.UMSG}
+                        </div>
+                      )}
+
+                      <div className="mt-1 flex items-center justify-between text-[11px]">
+                        <span className="text-sky-700 font-semibold">{lead.Inicial || '--'}</span>
+                        <Link href={`/leads/${lead.id}`} className="text-zinc-400 hover:text-zinc-700 flex items-center gap-0.5">
+                          Open <ChevronRight size={12} />
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                  {columnLeads.length === 0 && (
+                    <div className="h-20 border-2 border-dashed border-zinc-200 rounded-lg flex items-center justify-center text-zinc-400 text-xs font-medium">
+                      Drop area
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 print:hidden">
-          {filteredQuotes.map((quote) => (
-            <div 
-              key={quote.id} 
-              className="bg-white rounded-xl border border-zinc-200 p-5 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-sky-500/30 hover:shadow-md transition-all group"
-            >
-              <div className="flex-1 space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wider border ${getStatusColor(quote.status)}`}>
-                    {statusLabels[(quote.status as keyof typeof statusLabels) || 'new']}
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-sky-50 text-sky-700 rounded-md text-xs font-semibold uppercase tracking-wider">
-                    {quote.serviceType}
-                  </span>
-                  <div className="flex items-center gap-3 ml-auto md:ml-0 text-zinc-400 text-xs font-medium">
-                    <span className="flex items-center gap-1" title="Created At Time">
-                      <Calendar size={14} /> 
-                      {new Date(quote.date).toLocaleDateString()} {new Date(quote.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    {quote.createdByEmail && (
-                       <span className="hidden sm:inline-flex items-center gap-1 bg-zinc-100 text-zinc-500 px-2 py-0.5 rounded-full" title={`Created by ${quote.createdByEmail}`}>
-                         <User size={12} /> {quote.createdByEmail.split('@')[0]}
-                       </span>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex flex-col">
-                  <span className="font-bold text-lg text-zinc-900">{quote.customerName || 'Unnamed Lead'}</span>
-                  <div className="flex flex-wrap items-center gap-4 mt-1 text-sm text-zinc-600">
-                    {quote.customerPhone && <span className="flex items-center gap-1.5"><Phone size={14} className="text-zinc-400" /> {quote.customerPhone}</span>}
-                    {quote.customerEmail && <span className="flex items-center gap-1.5"><Mail size={14} className="text-zinc-400" /> {quote.customerEmail}</span>}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between md:flex-col md:items-end gap-3 border-t md:border-t-0 md:border-l border-zinc-100 pt-4 md:pt-0 md:pl-6">
-                <div className="text-2xl font-bold text-zinc-900 flex items-center tracking-tight">
-                  <DollarSign size={20} className="text-zinc-400" />
-                  {quote.total}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => handleEditClick(quote)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
-                  >
-                    <Edit3 size={14} /> Manage
-                  </button>
-                  <button 
-                    onClick={() => setSelectedQuote(quote)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-sky-600 bg-sky-50 hover:bg-sky-100 rounded-lg transition-colors"
-                  >
-                    <FileText size={14} /> View PDF
-                  </button>
-                  <button 
-                    onClick={() => deleteQuote(quote.id)}
-                    className="p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
-                    title="Delete Lead"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-zinc-50/50 border-b border-zinc-200 text-zinc-500 uppercase text-xs font-semibold tracking-wider">
+                <tr>
+                  <th className="pl-6 pr-4 py-4">Status & Notes</th>
+                  <th className="px-4 py-4">Name & Contact</th>
+                  <th className="px-4 py-4">Location</th>
+                  <th className="px-4 py-4">Details</th>
+                  <th className="px-4 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {filteredLeads.map((lead) => (
+                  <tr key={lead.id} className="hover:bg-zinc-50/50 transition-colors group">
+                    <td className="pl-6 pr-4 py-4 min-w-[200px]">
+                      <select
+                        value={getKanbanStage(lead.ETAPA)}
+                        onChange={(e) => handleStatusChange(lead.id, e.target.value)}
+                        className={`inline-flex items-center px-1 py-1 rounded-md text-xs font-bold tracking-tight border appearance-none pr-6 ${getStatusColor(lead.ETAPA)}`}
+                        style={{ cursor: 'pointer', backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22currentColor%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem top 50%', backgroundSize: '0.65rem auto' }}
+                      >
+                        {kanbanColumns.map(stage => (
+                          <option key={stage} value={stage}>{stage}</option>
+                        ))}
+                      </select>
+                      <div className="text-[11px] text-zinc-400 mt-1.5 flex flex-col gap-0.5 whitespace-normal max-w-[200px]">
+                        {lead.UMSG && <div className="text-amber-700 font-medium break-words"><span className="opacity-70">UMSG:</span> {lead.UMSG}</div>}
+                        {lead.OBSERVACOES && <div className="line-clamp-2" title={lead.OBSERVACOES}>{lead.OBSERVACOES}</div>}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <Link href={`/leads/${lead.id}`} className="font-semibold text-zinc-900 text-base hover:text-sky-600 block">{lead.Nome || 'Unnamed'}</Link>
+                      <div className="flex flex-col gap-0.5 mt-1 text-zinc-500 text-xs text-wrap max-w-[200px] truncate">
+                        {lead.Telefone && <span className="flex items-center gap-1.5"><Phone size={12} className="shrink-0" /> {lead.Telefone}</span>}
+                        {lead.Email && <span className="flex items-center gap-1.5"><Mail size={12} className="shrink-0" /> {lead.Email}</span>}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-1.5 text-zinc-700">
+                        <MapPin size={14} className="text-zinc-400 shrink-0" />
+                        <span className="font-medium text-wrap max-w-[150px] truncate">{lead.Cidade || 'Unknown City'}</span>
+                      </div>
+                      <div className="text-xs text-zinc-500 mt-1 pl-5">ZIP: {lead.ZIP || '--'}</div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center px-2 py-0.5 bg-zinc-100 text-zinc-600 rounded text-[11px] font-semibold border border-zinc-200 truncate max-w-[120px]">
+                          {lead.Service || 'Any'}
+                        </span>
+                        <span className="text-xs text-zinc-500 font-medium">
+                          {lead.Quartos || '-'} BR / {lead.Banheiros || '-'} BA
+                        </span>
+                      </div>
+                      <div className="text-xs font-semibold text-zinc-900 mt-1.5">
+                        Est: {lead.Inicial || '--'} {lead.Final ? `- ${lead.Final}` : ''}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <div className="flex justify-end gap-2 items-center">
+                        <button 
+                          onClick={() => handleEditClick(lead)}
+                          className="p-1.5 text-zinc-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors border border-transparent hover:border-sky-200"
+                          title="Quick Edit"
+                        >
+                          <Edit3 size={16} />
+                        </button>
+                        <Link 
+                          href={`/leads/${lead.id}`}
+                          className="p-1.5 text-zinc-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors border border-transparent hover:border-sky-200"
+                          title="View Details"
+                        >
+                          <ChevronRight size={16} />
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* Edit Lead Drawer/Modal */}
+      {/* Edit Drawer */}
       <AnimatePresence>
         {editingLead && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-4"
+            className="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 md:p-4"
           >
             <motion.div 
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="bg-white w-full max-w-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[90vh]"
+              className="bg-white w-full max-w-xl sm:rounded-2xl shadow-xl flex flex-col max-h-[90vh]"
             >
               <div className="flex items-center justify-between p-4 border-b border-zinc-200">
-                <h3 className="font-bold text-lg text-zinc-900">Manage Lead</h3>
-                <button onClick={() => setEditingLead(null)} className="p-2 text-zinc-400 hover:bg-zinc-100 rounded-full transition-colors">
+                <h3 className="font-bold text-lg text-zinc-900">Quick Edit Lead</h3>
+                <button onClick={() => setEditingLead(null)} className="p-2 text-zinc-400 hover:bg-zinc-100 rounded-full">
                   <X size={20} />
                 </button>
               </div>
               
-              <div className="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Customer Name</label>
+              <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2 space-y-1">
+                    <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Etapa (Status)</label>
                     <input 
                       type="text" 
-                      value={editForm.customerName} 
-                      onChange={e => setEditForm({...editForm, customerName: e.target.value})}
+                      value={editForm.ETAPA || ''} 
+                      onChange={e => setEditForm({...editForm, ETAPA: e.target.value})}
                       className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:ring-2 focus:ring-sky-500/20"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Status</label>
-                    <select 
-                      value={editForm.status} 
-                      onChange={e => setEditForm({...editForm, status: e.target.value as any})}
-                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:ring-2 focus:ring-sky-500/20 bg-white"
-                    >
-                      <option value="new">New Lead</option>
-                      <option value="contacted">Contacted</option>
-                      <option value="scheduled">Scheduled</option>
-                      <option value="completed">Completed</option>
-                      <option value="lost">Lost</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Phone</label>
+                  <div className="col-span-2 md:col-span-1 space-y-1">
+                    <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Name</label>
                     <input 
-                      type="tel" 
-                      value={editForm.customerPhone} 
-                      onChange={e => setEditForm({...editForm, customerPhone: e.target.value})}
+                      type="text" 
+                      value={editForm.Nome || ''} 
+                      onChange={e => setEditForm({...editForm, Nome: e.target.value})}
                       className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:ring-2 focus:ring-sky-500/20"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Email</label>
+                  <div className="col-span-2 md:col-span-1 space-y-1">
+                    <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Phone</label>
+                    <input 
+                      type="text" 
+                      value={editForm.Telefone || ''} 
+                      onChange={e => setEditForm({...editForm, Telefone: e.target.value})}
+                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:ring-2 focus:ring-sky-500/20"
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Email</label>
                     <input 
                       type="email" 
-                      value={editForm.customerEmail} 
-                      onChange={e => setEditForm({...editForm, customerEmail: e.target.value})}
+                      value={editForm.Email || ''} 
+                      onChange={e => setEditForm({...editForm, Email: e.target.value})}
                       className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:ring-2 focus:ring-sky-500/20"
                     />
                   </div>
-                  <div className="col-span-1 md:col-span-2 space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Address</label>
-                    <input 
-                      type="text" 
-                      value={editForm.customerAddress} 
-                      onChange={e => setEditForm({...editForm, customerAddress: e.target.value})}
-                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:ring-2 focus:ring-sky-500/20"
-                    />
-                  </div>
-                  <div className="col-span-1 md:col-span-2 space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Internal Notes</label>
+                  <div className="col-span-2 space-y-1">
+                    <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Observações</label>
                     <textarea 
-                      value={editForm.notes} 
-                      onChange={e => setEditForm({...editForm, notes: e.target.value})}
-                      rows={4}
+                      value={editForm.OBSERVACOES || ''} 
+                      onChange={e => setEditForm({...editForm, OBSERVACOES: e.target.value})}
+                      rows={3}
                       className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:ring-2 focus:ring-sky-500/20 resize-none"
-                      placeholder="Add notes about the client or estimate..."
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 border-t border-zinc-200 bg-zinc-50 sm:rounded-b-2xl flex justify-end gap-3">
+              <div className="p-4 border-t border-zinc-200 bg-zinc-50 sm:rounded-b-2xl flex justify-between items-center">
                 <button 
-                  onClick={() => setEditingLead(null)}
-                  className="px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-100 text-zinc-700 text-sm font-semibold rounded-lg transition-colors"
+                  onClick={() => deleteLead(editingLead.id).then(() => setEditingLead(null))}
+                  className="px-3 py-1.5 text-red-600 hover:bg-red-50 text-sm font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
                 >
-                  Cancel
+                  <Trash2 size={16} /> Delete
                 </button>
-                <button 
-                  onClick={handleSaveLead}
-                  disabled={isSaving}
-                  className="px-6 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
-                >
-                  {isSaving ? 'Saving...' : <><Save size={16} /> Save Changes</>}
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setEditingLead(null)}
+                    className="px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-100 text-zinc-700 text-sm font-semibold rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleSaveLead}
+                    disabled={isSaving}
+                    className="px-6 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-semibold rounded-lg transition-colors"
+                  >
+                    {isSaving ? 'Saving...' : 'Save Lead'}
+                  </button>
+                </div>
               </div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Document Modal */}
-      <AnimatePresence>
-        {selectedQuote && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm z-50 overflow-y-auto print:bg-white print:p-0"
-          >
-            <div className="flex min-h-full items-start justify-center p-4 sm:p-6 md:py-12">
-              <motion.div 
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                transition={{ type: "spring", duration: 0.5 }}
-                className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-zinc-200 overflow-hidden print:border-none print:shadow-none print:m-0 relative"
-              >
-                <div className="bg-zinc-50 border-b border-zinc-200 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
-                  <div className="flex items-center gap-2 text-zinc-700 font-medium">
-                    <FileText size={20} /> Estimate Document
-                  </div>
-                  <div className="flex w-full sm:w-auto gap-2">
-                    <button onClick={() => window.print()} className="flex-1 sm:flex-none justify-center px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2">
-                      <Printer size={16} /> Print / PDF
-                    </button>
-                    <button onClick={() => setSelectedQuote(null)} className="flex-1 sm:flex-none justify-center px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold rounded-lg transition-colors">
-                      Close
-                    </button>
-                  </div>
-                </div>
-                <div className="p-0 sm:p-8 print:p-0">
-                  <QuoteDocument quote={selectedQuote} settings={settings} />
-                </div>
-              </motion.div>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>

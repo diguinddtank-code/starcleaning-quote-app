@@ -97,6 +97,24 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        <div className="p-6 border-b border-zinc-100 bg-zinc-50/50">
+          <h2 className="text-sm font-bold text-zinc-900 uppercase tracking-wider mb-6">Frequency Multipliers</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Weekly (x)</label>
+              <input type="number" step="0.05" value={localSettings.weeklyMultiplier} onChange={(e) => handleChange('weeklyMultiplier', Number(e.target.value))} className="w-full px-3 py-2.5 text-sm rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Bi-weekly (x)</label>
+              <input type="number" step="0.05" value={localSettings.biWeeklyMultiplier} onChange={(e) => handleChange('biWeeklyMultiplier', Number(e.target.value))} className="w-full px-3 py-2.5 text-sm rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Monthly (x)</label>
+              <input type="number" step="0.05" value={localSettings.monthlyMultiplier} onChange={(e) => handleChange('monthlyMultiplier', Number(e.target.value))} className="w-full px-3 py-2.5 text-sm rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500" />
+            </div>
+          </div>
+        </div>
+
         <div className="p-6">
           <h2 className="text-sm font-bold text-zinc-900 uppercase tracking-wider mb-6">Add-on Pricing ($)</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">

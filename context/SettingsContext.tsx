@@ -5,22 +5,25 @@ import { PricingSettings } from '@/lib/types';
 import { supabase, hasSupabase } from '@/lib/supabase';
 
 const defaultSettings: PricingSettings = {
-  basePrice: 100,
-  pricePerSqFt: 0.05,
-  bedPrice: 20,
-  bathPrice: 30,
-  halfBathPrice: 15,
-  deepCleanMultiplier: 1.5,
-  moveInOutMultiplier: 2.0,
+  basePrice: 50,
+  pricePerSqFt: 0.04,
+  bedPrice: 15,
+  bathPrice: 20,
+  halfBathPrice: 10,
+  deepCleanMultiplier: 2.0,
+  moveInOutMultiplier: 2.5,
   vacationMultiplier: 1.2,
   commercialMultiplier: 1.0,
   constructionMultiplier: 2.5,
+  weeklyMultiplier: 0.7,
+  biWeeklyMultiplier: 0.8,
+  monthlyMultiplier: 0.9,
   extras: {
-    oven: 30,
-    fridge: 30,
-    windows: 50,
+    oven: 40,
+    fridge: 60,
+    windows: 85,
     laundry: 20,
-    cabinets: 40,
+    cabinets: 100,
     garage: 50,
   },
 };
@@ -61,6 +64,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
               vacationMultiplier: Number(data.vacation_multiplier || 1.2),
               commercialMultiplier: Number(data.commercial_multiplier || 1.0),
               constructionMultiplier: Number(data.construction_multiplier || 2.5),
+              weeklyMultiplier: Number(data.weekly_multiplier || 0.8),
+              biWeeklyMultiplier: Number(data.bi_weekly_multiplier || 0.85),
+              monthlyMultiplier: Number(data.monthly_multiplier || 0.9),
               extras: data.extras as any,
             };
             setSettings(mappedSettings);
@@ -86,6 +92,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                 vacationMultiplier: Number(data.vacation_multiplier || 1.2),
                 commercialMultiplier: Number(data.commercial_multiplier || 1.0),
                 constructionMultiplier: Number(data.construction_multiplier || 2.5),
+                weeklyMultiplier: Number(data.weekly_multiplier || 0.8),
+                biWeeklyMultiplier: Number(data.bi_weekly_multiplier || 0.85),
+                monthlyMultiplier: Number(data.monthly_multiplier || 0.9),
                 extras: data.extras as any,
               });
             }
@@ -131,6 +140,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           vacation_multiplier: newSettings.vacationMultiplier,
           commercial_multiplier: newSettings.commercialMultiplier,
           construction_multiplier: newSettings.constructionMultiplier,
+          weekly_multiplier: newSettings.weeklyMultiplier,
+          bi_weekly_multiplier: newSettings.biWeeklyMultiplier,
+          monthly_multiplier: newSettings.monthlyMultiplier,
           extras: newSettings.extras,
         });
       } catch (e) {

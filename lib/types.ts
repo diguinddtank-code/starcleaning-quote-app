@@ -12,6 +12,9 @@ export interface PricingSettings {
   vacationMultiplier: number;
   commercialMultiplier: number;
   constructionMultiplier: number;
+  weeklyMultiplier: number;
+  biWeeklyMultiplier: number;
+  monthlyMultiplier: number;
   extras: {
     oven: number;
     fridge: number;
@@ -20,6 +23,30 @@ export interface PricingSettings {
     cabinets: number;
     garage: number;
   };
+}
+
+export interface Lead {
+  id: string;
+  created_at?: string;
+  updated_at?: string;
+  Nome?: string;
+  Email?: string;
+  Telefone?: string;
+  ZIP?: string;
+  Quartos?: string;
+  Banheiros?: string;
+  Service?: string;
+  Frequencia?: string;
+  Inicial?: string;
+  Final?: string;
+  Cidade?: string;
+  Data?: string;
+  Agendado?: string;
+  ETAPA?: string;
+  OBSERVACOES?: string;
+  FOLLOWUP?: string;
+  UMSG?: string;
+  created_by_email?: string;
 }
 
 export interface QuoteState {
@@ -34,6 +61,7 @@ export interface QuoteState {
 
 export interface SavedQuote extends QuoteState {
   id: string;
+  leadId?: string;
   date: string;
   total: number;
   customerName?: string;

@@ -7,25 +7,45 @@ import { Stepper } from '@/components/ui/Stepper';
 import { ServiceCard, ExtraCard } from '@/components/ui/Cards';
 import { ServiceType } from '@/lib/types';
 import { Home, Sparkles, Key, Wind, Droplets, Box, WashingMachine, CarFront, FileText, CheckCircle2, Building2, Hammer, Printer, Loader2, BookOpen, ShieldAlert, Copy, MessageCircle, X, Calendar } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { SavedQuote } from '@/lib/types';
 import { QuoteDocument } from '@/components/QuoteDocument';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useLead } from '@/context/LeadContext';
 
-export default function CalculatorPage() {
-  const { quote, updateQuote, totalPrice, saveQuote, resetQuote } = useQuote();
+function CalculatorContent() {
+  const { quote, updateQuote, totalPrice, saveQuoteToLead, resetQuote } = useQuote();
   const { settings } = useSettings();
+  const { leads } = useLead();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [leadId, setLeadId] = useState<string | undefined>(searchParams?.get('leadId') || undefined);
+
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [showLeadSuggestions, setShowLeadSuggestions] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [savedEstimate, setSavedEstimate] = useState<SavedQuote | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showScripts, setShowScripts] = useState(false);
+
+  useEffect(() => {
+    if (leadId) {
+      const lead = leads.find(l => l.id === leadId);
+      if (lead) {
+        setCustomerName(lead.Nome || '');
+        setCustomerPhone(lead.Telefone || '');
+        setCustomerEmail(lead.Email || '');
+        if (lead.Quartos) updateQuote({ beds: parseInt(lead.Quartos) || quote.beds });
+        if (lead.Banheiros) updateQuote({ baths: parseInt(lead.Banheiros) || quote.baths });
+      }
+    }
+  }, [leadId, leads]);
 
   // Calculate base residential total for recurring pricing
   const standardTotal = (() => {
@@ -85,7 +105,11 @@ export default function CalculatorPage() {
   };
 
   const handleServiceChange = (type: ServiceType) => {
-    updateQuote({ serviceType: type });
+    if (type !== 'residential') {
+      updateQuote({ serviceType: type, frequency: 'one-time' });
+    } else {
+      updateQuote({ serviceType: type });
+    }
   };
 
   const toggleExtra = (extraId: string) => {
@@ -105,7 +129,7 @@ export default function CalculatorPage() {
     await new Promise(resolve => setTimeout(resolve, 800));
     
     try {
-      const newQuote = await saveQuote(customerName, customerPhone);
+      const newQuote = await saveQuoteToLead(leadId, customerName, customerPhone, customerEmail);
       setSavedEstimate(newQuote);
       
       setIsGenerating(false);
@@ -119,7 +143,7 @@ export default function CalculatorPage() {
     } catch (error: any) {
       console.error("Failed to save quote:", error);
       setIsGenerating(false);
-      setSaveError(error.message || "Failed to sync with database. Check Supabase RLS policies.");
+      setSaveError(error.message || "Failed to sync with database.");
       
       // We still show the summary so they don't lose their work, but they know it didn't sync
       setTimeout(() => {
@@ -190,24 +214,27 @@ export default function CalculatorPage() {
               />
               <ServiceCard 
                 title="Weekly" 
-                description="-20% discount." 
+                description={`${Math.round((1 - settings.weeklyMultiplier) * 100)}% discount.`} 
                 icon={<Calendar size={20} />} 
                 selected={quote.frequency === 'weekly'} 
-                onClick={() => updateQuote({ frequency: 'weekly' })} 
+                onClick={() => quote.serviceType === 'residential' && updateQuote({ frequency: 'weekly' })} 
+                disabled={quote.serviceType !== 'residential'}
               />
               <ServiceCard 
                 title="Bi-weekly" 
-                description="-15% discount." 
+                description={`${Math.round((1 - settings.biWeeklyMultiplier) * 100)}% discount.`} 
                 icon={<Calendar size={20} />} 
                 selected={quote.frequency === 'bi-weekly'} 
-                onClick={() => updateQuote({ frequency: 'bi-weekly' })} 
+                onClick={() => quote.serviceType === 'residential' && updateQuote({ frequency: 'bi-weekly' })} 
+                disabled={quote.serviceType !== 'residential'}
               />
               <ServiceCard 
                 title="Monthly" 
-                description="-10% discount." 
+                description={`${Math.round((1 - settings.monthlyMultiplier) * 100)}% discount.`} 
                 icon={<Calendar size={20} />} 
                 selected={quote.frequency === 'monthly'} 
-                onClick={() => updateQuote({ frequency: 'monthly' })} 
+                onClick={() => quote.serviceType === 'residential' && updateQuote({ frequency: 'monthly' })} 
+                disabled={quote.serviceType !== 'residential'}
               />
             </div>
           </section>
@@ -402,13 +429,50 @@ export default function CalculatorPage() {
             </div>
 
             <div className="space-y-3">
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Client Details</label>
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    placeholder="Client Name (Type to search leads)" 
+                    value={customerName}
+                    onChange={(e) => {
+                      setCustomerName(e.target.value);
+                      setLeadId(undefined); // Reset since they are typing potentially a new name
+                    }}
+                    onFocus={() => setShowLeadSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowLeadSuggestions(false), 200)}
+                    className="w-full px-3 py-2.5 text-sm rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                  />
+                  {showLeadSuggestions && leads.length > 0 && customerName && (
+                    <div className="absolute z-20 w-full mt-1 bg-white border border-zinc-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                      {leads.filter(l => l.Nome?.toLowerCase().includes(customerName.toLowerCase())).map(lead => (
+                        <div 
+                          key={lead.id}
+                          className="px-3 py-2 text-sm hover:bg-sky-50 cursor-pointer border-b border-zinc-50 last:border-0"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setLeadId(lead.id);
+                            setCustomerName(lead.Nome || '');
+                            setCustomerPhone(lead.Telefone || '');
+                            setCustomerEmail(lead.Email || '');
+                            if (lead.Quartos) updateQuote({ beds: parseInt(lead.Quartos) || quote.beds });
+                            if (lead.Banheiros) updateQuote({ baths: parseInt(lead.Banheiros) || quote.baths });
+                            setShowLeadSuggestions(false);
+                          }}
+                        >
+                          <div className="font-semibold text-zinc-800">{lead.Nome}</div>
+                          <div className="text-[11px] text-zinc-500">{lead.Email || lead.Telefone || 'No contact info'}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <input 
-                  type="text" 
-                  placeholder="Client Name" 
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
+                  type="email" 
+                  placeholder="Email Address" 
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
                   className="w-full px-3 py-2.5 text-sm rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
                 />
                 <input 
@@ -585,7 +649,11 @@ export default function CalculatorPage() {
                     onClick={() => {
                       setShowSummary(false);
                       resetQuote();
-                      router.push('/leads');
+                      if (leadId) {
+                        router.push(`/leads/${leadId}`);
+                      } else {
+                        router.push('/leads');
+                      }
                     }} 
                     className="flex-1 sm:flex-none justify-center px-4 py-2.5 bg-sky-100 hover:bg-sky-200 text-sky-700 text-sm font-bold rounded-lg transition-colors shadow-sm"
                   >
@@ -611,5 +679,13 @@ export default function CalculatorPage() {
       )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function CalculatorPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center text-zinc-500"><Loader2 className="animate-spin w-8 h-8" /></div>}>
+      <CalculatorContent />
+    </Suspense>
   );
 }

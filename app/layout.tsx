@@ -4,6 +4,7 @@ import './globals.css';
 import { SettingsProvider } from '@/context/SettingsContext';
 import { QuoteProvider } from '@/context/QuoteContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { LeadProvider } from '@/context/LeadContext';
 import { AuthGuard } from '@/components/AuthGuard';
 import { Sidebar } from '@/components/Sidebar';
 import { MobileNav } from '@/components/MobileNav';
@@ -22,15 +23,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <AuthGuard>
             <SettingsProvider>
-              <QuoteProvider>
-                <div className="flex h-screen overflow-hidden bg-zinc-50">
-                  <Sidebar />
-                  <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
-                    {children}
-                  </main>
-                  <MobileNav />
-                </div>
-              </QuoteProvider>
+              <LeadProvider>
+                <QuoteProvider>
+                  <div className="flex h-screen overflow-hidden bg-zinc-50">
+                    <Sidebar />
+                    <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+                      {children}
+                    </main>
+                    <MobileNav />
+                  </div>
+                </QuoteProvider>
+              </LeadProvider>
             </SettingsProvider>
           </AuthGuard>
         </AuthProvider>

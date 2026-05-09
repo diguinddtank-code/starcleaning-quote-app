@@ -4,16 +4,16 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { QuoteState, SavedQuote } from '@/lib/types';
 import { useSettings } from './SettingsContext';
 import { supabase, hasSupabase } from '@/lib/supabase';
+import { useLead } from './LeadContext';
 
 interface QuoteContextType {
   quote: QuoteState;
   updateQuote: (updates: Partial<QuoteState>) => void;
   totalPrice: number;
-  savedQuotes: SavedQuote[];
-  saveQuote: (customerName?: string, customerPhone?: string) => Promise<SavedQuote>;
-  updateLead: (id: string, updates: Partial<SavedQuote>) => Promise<void>;
-  deleteQuote: (id: string) => void;
+  saveQuoteToLead: (leadId?: string, customerName?: string, customerPhone?: string, customerEmail?: string) => Promise<SavedQuote>;
   resetQuote: () => void;
+  savedQuotes: SavedQuote[];
+  deleteQuote: (id: string) => Promise<void>;
 }
 
 const defaultQuote: QuoteState = {
@@ -32,6 +32,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
   const [quote, setQuote] = useState<QuoteState>(defaultQuote);
   const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([]);
   const { settings } = useSettings();
+  const { leads, updateLead } = useLead();
 
   useEffect(() => {
     let subscription: any = null;
@@ -41,137 +42,40 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
         try {
           const { data, error } = await supabase
             .from('quotes')
-            .select('*')
-            .order('created_at', { ascending: false });
+            .select('*');
 
           if (data && !error) {
-            const mappedQuotes: SavedQuote[] = data.map((q: any) => ({
+            // Map DB format to SavedQuote
+            const mapped = data.map(q => ({
               id: q.id,
               date: q.created_at,
+              leadId: q.lead_id,
+              customerName: q.customer_name,
+              customerPhone: q.customer_phone,
+              customerEmail: q.customer_email,
               sqFt: q.sq_ft,
               beds: q.beds,
               baths: q.baths,
               halfBaths: q.half_baths,
-              serviceType: q.service_type,
-              frequency: q.frequency || 'one-time',
-              selectedExtras: q.selected_extras || [],
-              total: Number(q.total),
-              customerName: q.customer_name,
-              customerPhone: q.customer_phone,
-              customerEmail: q.customer_email,
-              customerAddress: q.customer_address,
-              notes: q.notes,
-              status: q.status || 'new',
-              createdByEmail: q.created_by_email,
+              serviceType: q.service_type as any,
+              frequency: q.frequency as any,
+              total: q.total,
+              status: q.status,
+              selectedExtras: [] // If you want to support extras, add them to schema
             }));
-            setSavedQuotes(mappedQuotes);
+            setSavedQuotes(mapped);
           }
-
-          // Automatically sync local data if any exists
-          const localData = localStorage.getItem('starCleaningHistory');
-          if (localData) {
-            try {
-              const localQuotes: SavedQuote[] = JSON.parse(localData);
-              if (localQuotes.length > 0) {
-                const { data: userAuth } = await supabase.auth.getUser();
-                const user = userAuth?.user;
-                
-                const quotesToInsert = localQuotes.map(quote => ({
-                  created_at: quote.date || new Date().toISOString(),
-                  sq_ft: quote.sqFt,
-                  beds: quote.beds,
-                  baths: quote.baths,
-                  half_baths: quote.halfBaths,
-                  service_type: quote.serviceType,
-                  frequency: quote.frequency || 'one-time',
-                  selected_extras: quote.selectedExtras || [],
-                  total: quote.total,
-                  customer_name: quote.customerName || null,
-                  customer_phone: quote.customerPhone || null,
-                  status: quote.status || 'new',
-                  created_by_email: user?.email || null,
-                }));
-
-                const { error: syncError } = await supabase.from('quotes').insert(quotesToInsert);
-                if (!syncError) {
-                  localStorage.removeItem('starCleaningHistory');
-                  console.log('Successfully synced local quotes to Supabase!');
-                } else {
-                  console.error('Error syncing local quotes', syncError);
-                }
-              }
-            } catch (e) {
-              console.error('Failed to parse or sync local quotes', e);
-            }
-          }
-        } catch (e) {
-          console.error('Failed to load quotes from Supabase', e);
+        } catch (error) {
+          console.error("Failed to load quotes:", error);
         }
 
-        // Subscribe to changes
         subscription = supabase
           .channel(`quotes_changes_${Math.random()}`)
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, (payload) => {
-            if (payload.eventType === 'INSERT') {
-              const q = payload.new as any;
-              const newQuote: SavedQuote = {
-                id: q.id,
-                date: q.created_at,
-                sqFt: q.sq_ft,
-                beds: q.beds,
-                baths: q.baths,
-                halfBaths: q.half_baths,
-                serviceType: q.service_type,
-                frequency: q.frequency || 'one-time',
-                selectedExtras: q.selected_extras || [],
-                total: Number(q.total),
-                customerName: q.customer_name,
-                customerPhone: q.customer_phone,
-                customerEmail: q.customer_email,
-                customerAddress: q.customer_address,
-                notes: q.notes,
-                status: q.status || 'new',
-                createdByEmail: q.created_by_email,
-              };
-              setSavedQuotes((prev) => {
-                if (prev.some(p => p.id === newQuote.id)) return prev;
-                return [newQuote, ...prev];
-              });
-            } else if (payload.eventType === 'DELETE') {
-              setSavedQuotes((prev) => prev.filter((q) => q.id !== payload.old.id));
-            } else if (payload.eventType === 'UPDATE') {
-              const q = payload.new as any;
-              setSavedQuotes((prev) => prev.map((old) => old.id === q.id ? {
-                id: q.id,
-                date: q.created_at,
-                sqFt: q.sq_ft,
-                beds: q.beds,
-                baths: q.baths,
-                halfBaths: q.half_baths,
-                serviceType: q.service_type,
-                frequency: q.frequency || 'one-time',
-                selectedExtras: q.selected_extras || [],
-                total: Number(q.total),
-                customerName: q.customer_name,
-                customerPhone: q.customer_phone,
-                customerEmail: q.customer_email,
-                customerAddress: q.customer_address,
-                notes: q.notes,
-                status: q.status || 'new',
-                createdByEmail: q.created_by_email,
-              } : old));
-            }
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, () => {
+            // Simple refetch, or we can handle payload. Too long payload.
+            loadQuotes();
           })
           .subscribe();
-      } else {
-        const saved = localStorage.getItem('starCleaningHistory');
-        if (saved) {
-          try {
-            setSavedQuotes(JSON.parse(saved));
-          } catch (e) {
-            console.error('Failed to parse history', e);
-          }
-        }
       }
     };
 
@@ -218,11 +122,11 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
     });
 
     if (quote.frequency === 'weekly') {
-      total *= 0.80;
+      total *= settings.weeklyMultiplier;
     } else if (quote.frequency === 'bi-weekly') {
-      total *= 0.85;
+      total *= settings.biWeeklyMultiplier;
     } else if (quote.frequency === 'monthly') {
-      total *= 0.90;
+      total *= settings.monthlyMultiplier;
     }
 
     return Math.round(total);
@@ -230,121 +134,87 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
 
   const totalPrice = calculateTotal();
 
-  const saveQuote = async (customerName?: string, customerPhone?: string): Promise<SavedQuote> => {
-    let newQuote: SavedQuote;
+  const saveQuoteToLead = async (leadId?: string, customerName?: string, customerPhone?: string, customerEmail?: string): Promise<SavedQuote> => {
+    const qid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9);
+    const newQuote: SavedQuote = {
+      ...quote,
+      id: qid,
+      date: new Date().toISOString(),
+      total: totalPrice,
+      customerName,
+      customerPhone,
+      customerEmail,
+      status: 'new',
+    };
 
     if (hasSupabase && supabase) {
-      try {
-        const { data: userAuth } = await supabase.auth.getUser();
-        const userEmail = userAuth?.user?.email || undefined;
+      const { data: userAuth } = await supabase.auth.getUser();
+      const userEmail = userAuth?.user?.email || null;
+      let finalLeadId = leadId;
 
-        const { data, error } = await supabase.from('quotes').insert({
-          sq_ft: quote.sqFt,
-          beds: quote.beds,
-          baths: quote.baths,
-          half_baths: quote.halfBaths,
-          service_type: quote.serviceType,
-          frequency: quote.frequency,
-          selected_extras: quote.selectedExtras,
-          total: totalPrice,
-          customer_name: customerName || null,
-          customer_phone: customerPhone || null,
-          status: 'new',
-          created_by_email: userEmail,
+      if (leadId) {
+        // We attach this estimate details to an existing lead by updating ETAPA and Prices
+        await supabase.from('leads').update({
+          Inicial: `$${totalPrice}`,
+          OBSERVACOES: `Estimated ${quote.serviceType} / ${quote.sqFt}sqft. Total: $${totalPrice}`,
+          ETAPA: 'cotado'
+        }).eq('id', leadId);
+      } else {
+        // Create a new Lead
+        const { data: newLead } = await supabase.from('leads').insert({
+          Nome: customerName,
+          Telefone: customerPhone,
+          Email: customerEmail,
+          Quartos: quote.beds.toString(),
+          Banheiros: (quote.baths + quote.halfBaths).toString(),
+          Service: quote.serviceType,
+          Frequencia: quote.frequency,
+          Inicial: `$${totalPrice}`,
+          ETAPA: 'novo',
+          created_by_email: userEmail
         }).select().single();
-
-        if (error) {
-          console.error('Supabase insert error:', error);
-          throw error;
+        if (newLead) {
+          finalLeadId = newLead.id;
         }
-
-        newQuote = {
-          ...quote,
-          id: data.id,
-          date: data.created_at,
-          total: totalPrice,
-          customerName,
-          customerPhone,
-          status: 'new',
-        };
-      } catch (e) {
-        console.error('Failed to save quote to Supabase', e);
-        // Fallback to local generation if Supabase fails
-        const quoteId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
-        newQuote = {
-          ...quote,
-          id: quoteId,
-          date: new Date().toISOString(),
-          total: totalPrice,
-          customerName,
-          customerPhone,
-          status: 'new',
-        };
       }
-    } else {
-      const quoteId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
-      newQuote = {
-        ...quote,
-        id: quoteId,
-        date: new Date().toISOString(),
-        total: totalPrice,
-        customerName,
-        customerPhone,
-        status: 'new',
-      };
-      localStorage.setItem('starCleaningHistory', JSON.stringify([newQuote, ...savedQuotes]));
-    }
 
-    // Optimistic update
-    setSavedQuotes((prev) => [newQuote, ...prev]);
+      // Insert Quote
+      await supabase.from('quotes').insert({
+        id: qid,
+        lead_id: finalLeadId,
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_email: customerEmail,
+        sq_ft: quote.sqFt,
+        beds: quote.beds,
+        baths: quote.baths,
+        half_baths: quote.halfBaths,
+        service_type: quote.serviceType,
+        frequency: quote.frequency,
+        total: totalPrice,
+        status: 'new'
+      });
+    }
     
     return newQuote;
   };
 
-  const updateLead = async (id: string, updates: Partial<SavedQuote>) => {
-    // Optimistic update
-    setSavedQuotes((prev) => prev.map((q) => q.id === id ? { ...q, ...updates } : q));
-
-    if (hasSupabase && supabase) {
-      try {
-        const dbUpdates: any = {};
-        if (updates.customerName !== undefined) dbUpdates.customer_name = updates.customerName;
-        if (updates.customerPhone !== undefined) dbUpdates.customer_phone = updates.customerPhone;
-        if (updates.customerEmail !== undefined) dbUpdates.customer_email = updates.customerEmail;
-        if (updates.customerAddress !== undefined) dbUpdates.customer_address = updates.customerAddress;
-        if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
-        if (updates.status !== undefined) dbUpdates.status = updates.status;
-
-        const { error } = await supabase.from('quotes').update(dbUpdates).eq('id', id);
-        if (error) throw error;
-      } catch (e) {
-        console.error('Failed to update lead in Supabase', e);
-      }
-    } else {
-      const updated = savedQuotes.map((q) => q.id === id ? { ...q, ...updates } : q);
-      localStorage.setItem('starCleaningHistory', JSON.stringify(updated));
-    }
-  };
-
   const deleteQuote = async (id: string) => {
-    // Optimistic update
-    const updated = savedQuotes.filter((q) => q.id !== id);
-    setSavedQuotes(updated);
-
+    // Optimistic
+    setSavedQuotes(prev => prev.filter(q => q.id !== id));
+    
     if (hasSupabase && supabase) {
       try {
         await supabase.from('quotes').delete().eq('id', id);
       } catch (e) {
-        console.error('Failed to delete quote from Supabase', e);
+        console.error("Failed to delete quote", e);
       }
-    } else {
-      localStorage.setItem('starCleaningHistory', JSON.stringify(updated));
     }
   };
 
   return (
     <QuoteContext.Provider
-      value={{ quote, updateQuote, totalPrice, savedQuotes, saveQuote, updateLead, deleteQuote, resetQuote }}
+      value={{ quote, updateQuote, totalPrice, saveQuoteToLead, resetQuote, savedQuotes, deleteQuote }}
     >
       {children}
     </QuoteContext.Provider>
