@@ -50,7 +50,7 @@ export default function HistoryPage() {
             <FileText size={32} />
           </div>
           <h2 className="text-lg font-bold text-zinc-900 mb-2">No quotes found</h2>
-          <p className="text-sm text-zinc-500 mb-6">You haven't generated any estimates yet.</p>
+          <p className="text-sm text-zinc-500 mb-6">You haven&apos;t generated any estimates yet.</p>
           <Link href="/estimate" className="inline-flex items-center gap-2 px-6 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg transition-colors">
             Create Estimate
           </Link>

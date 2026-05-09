@@ -41,8 +41,10 @@ function CalculatorContent() {
         setCustomerName(lead.Nome || '');
         setCustomerPhone(lead.Telefone || '');
         setCustomerEmail(lead.Email || '');
-        if (lead.Quartos) updateQuote({ beds: parseInt(lead.Quartos) || quote.beds });
-        if (lead.Banheiros) updateQuote({ baths: parseInt(lead.Banheiros) || quote.baths });
+        const updates: Record<string, number> = {};
+        if (lead.Quartos) updates.beds = parseInt(lead.Quartos) || quote.beds;
+        if (lead.Banheiros) updates.baths = parseInt(lead.Banheiros) || quote.baths;
+        if (Object.keys(updates).length > 0) updateQuote(updates);
       }
     }
   }, [leadId, leads]);

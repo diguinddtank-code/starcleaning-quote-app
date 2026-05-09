@@ -37,19 +37,23 @@ export default function LeadsPage() {
 
   const kanbanColumns = ['Novo', 'Primeiro Contato', 'Negociando', 'Agendado', 'Não Responde', 'Sem Interesse', 'Outros'];
 
-  const filteredLeads = leads
+  const searchedLeads = leads.filter(l => {
+    if (!filterQuery) return true;
+    const lowerQuery = filterQuery.toLowerCase();
+    return (
+      l.Nome?.toLowerCase().includes(lowerQuery) ||
+      l.Email?.toLowerCase().includes(lowerQuery) ||
+      l.Telefone?.toLowerCase().includes(lowerQuery) ||
+      l.ETAPA?.toLowerCase().includes(lowerQuery) ||
+      l.UMSG?.toLowerCase().includes(lowerQuery) ||
+      l.OBSERVACOES?.toLowerCase().includes(lowerQuery)
+    );
+  });
+
+  const filteredLeads = searchedLeads
     .filter(l => {
       if (statusFilter !== 'Todos' && getKanbanStage(l.ETAPA) !== statusFilter) return false;
-      if (!filterQuery) return true;
-      const lowerQuery = filterQuery.toLowerCase();
-      return (
-        l.Nome?.toLowerCase().includes(lowerQuery) ||
-        l.Email?.toLowerCase().includes(lowerQuery) ||
-        l.Telefone?.toLowerCase().includes(lowerQuery) ||
-        l.ETAPA?.toLowerCase().includes(lowerQuery) ||
-        l.UMSG?.toLowerCase().includes(lowerQuery) ||
-        l.OBSERVACOES?.toLowerCase().includes(lowerQuery)
-      );
+      return true;
     })
     .sort((a, b) => {
       if (a.UMSG && !b.UMSG) return -1;
@@ -146,7 +150,9 @@ export default function LeadsPage() {
         <div className="flex flex-col gap-3 pb-2 border-b border-zinc-200">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex flex-wrap items-center gap-1.5">
-              {['Todos', ...kanbanColumns].map(stage => (
+              {['Todos', ...kanbanColumns].map(stage => {
+                const count = stage === 'Todos' ? searchedLeads.length : searchedLeads.filter(l => getKanbanStage(l.ETAPA) === stage).length;
+                return (
                 <button
                   key={stage}
                   onClick={() => setStatusFilter(stage)}
@@ -157,9 +163,9 @@ export default function LeadsPage() {
                   } ${stage === 'Novo' && statusFilter !== 'Novo' ? 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : ''}`}
                 >
                   {stage === 'Novo' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>}
-                  {stage}
+                  {stage} <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === stage ? 'bg-white/20 text-white' : 'bg-zinc-100 text-zinc-500'}`}>{count}</span>
                 </button>
-              ))}
+              )})}
             </div>
             
             <div className="flex items-center gap-3">
