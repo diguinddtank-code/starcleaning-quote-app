@@ -48,10 +48,17 @@ export default function KPIPage() {
   // Leads over time (by month created) - simplistic fallback
   const timeMap = leads.reduce((acc, lead) => {
     let dateStr = 'Unknown';
-    if (lead.created_at) {
-      const d = new Date(lead.created_at);
+    const timeRef = lead.UMSG || lead.created_at;
+    if (timeRef) {
+      const d = new Date(timeRef);
       if (!isNaN(d.getTime())) {
         dateStr = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+      } else if (!isNaN(Number(timeRef))) {
+        // Fallback for unix timestamp if UMSG is stored as a number string
+        const dNum = new Date(Number(timeRef));
+        if (!isNaN(dNum.getTime())) {
+          dateStr = dNum.toLocaleString('default', { month: 'short', year: '2-digit' });
+        }
       }
     }
     acc[dateStr] = (acc[dateStr] || 0) + 1;
