@@ -8,7 +8,7 @@ import {
   Users, PlusCircle, History, ArrowRight, 
   BarChart2, Calculator, BookOpen, 
   CheckCircle, FileText, Activity, 
-  DollarSign, TrendingUp, Inbox
+  DollarSign, TrendingUp, Inbox, Calendar, Bell
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -48,7 +48,8 @@ export default function DashboardPage() {
     if (!dateString) return Infinity;
     const d = new Date(dateString);
     if (isNaN(d.getTime())) return Infinity;
-    const diffTime = Math.abs(today.getTime() - d.getTime());
+    // Calculate difference allowing for negative/positive signs for reminders
+    const diffTime = today.getTime() - d.getTime();
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
   };
 
@@ -56,13 +57,23 @@ export default function DashboardPage() {
     const stage = l.ETAPA?.toLowerCase() || 'novo';
     if (stage.includes('agendado') || stage.includes('interesse') || stage.includes('não responde')) return false;
 
-    const daysSinceLastMessage = getDaysDifference(l.UMSG);
+    const daysSinceLastMessage = Math.abs(getDaysDifference(l.UMSG));
     
     if (stage.includes('novo')) return true;
     if (stage.includes('negociando') && daysSinceLastMessage >= 2) return true;
     if (stage.includes('primeiro contato') && daysSinceLastMessage >= 3) return true;
     return false;
-  }).sort((a, b) => getDaysDifference(a.UMSG) - getDaysDifference(b.UMSG)).slice(0, 4);
+  }).sort((a, b) => Math.abs(getDaysDifference(a.UMSG)) - Math.abs(getDaysDifference(b.UMSG))).slice(0, 4);
+
+  const reminders = leads.filter(l => {
+    if (!l.REMINDER_DATE) return false;
+    const reminderDate = new Date(l.REMINDER_DATE);
+    if (isNaN(reminderDate.getTime())) return false;
+    
+    // Reminders that are due (in the past, today, or tomorrow)
+    const diff = getDaysDifference(l.REMINDER_DATE);
+    return diff >= -1; // -1 means tomorrow, 0 means today, >0 means overdue
+  }).sort((a, b) => new Date(a.REMINDER_DATE!).getTime() - new Date(b.REMINDER_DATE!).getTime());
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -158,6 +169,52 @@ export default function DashboardPage() {
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Reminders Widget */}
+      {reminders.length > 0 && (
+        <motion.div variants={itemVariants} className="bg-emerald-50 border border-emerald-100 rounded-2xl shadow-sm p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+            <Bell size={120} />
+          </div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-4">
+              <Bell className="text-emerald-600" size={20} />
+              <h2 className="text-lg font-bold text-emerald-900">Lembretes & Tarefas</h2>
+              <span className="ml-2 bg-emerald-200 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">{reminders.length} Pendentes</span>
+            </div>
+            <p className="text-sm text-emerald-700 mb-6">Contatos e follow-ups agendados baseados nos seus lembretes.</p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {reminders.map(lead => {
+                const diff = getDaysDifference(lead.REMINDER_DATE);
+                const isOverdue = diff > 0;
+                const isToday = diff === 0;
+                const timeString = new Date(lead.REMINDER_DATE!).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                
+                return (
+                  <Link href={`/leads/${lead.id}`} key={lead.id} className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-emerald-100 group flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start mb-2">
+                        <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded ${isOverdue ? 'bg-rose-100 text-rose-700' : isToday ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                          {isOverdue ? 'Atrasado' : isToday ? 'Hoje' : 'Amanhã'}
+                        </span>
+                        <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                          <Calendar size={12} /> {timeString}
+                        </span>
+                      </div>
+                      <p className="font-bold text-zinc-900 group-hover:text-emerald-700 truncate">{lead.Nome || 'Cliente sem nome'}</p>
+                      <p className="text-xs text-zinc-500 line-clamp-2 mt-1 mb-3">{lead.FOLLOWUP || 'Sem detalhes'}</p>
+                    </div>
+                    <div className="text-emerald-600 font-semibold text-xs flex items-center group-hover:underline mt-auto">
+                      Abrir Lead <ArrowRight size={12} className="ml-1" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Sales Assistant Widget */}
       {opportunities.length > 0 && (

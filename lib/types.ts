@@ -47,6 +47,7 @@ export interface Lead {
   OBSERVACOES?: string;
   FOLLOWUP?: string;
   UMSG?: string;
+  REMINDER_DATE?: string;
   created_by_email?: string;
 }
 

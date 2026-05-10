@@ -23,7 +23,11 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [isSaving, setIsSaving] = useState(false);
 
   const [isEditingComms, setIsEditingComms] = useState(false);
-  const [commsForm, setCommsForm] = useState({ FOLLOWUP: lead?.FOLLOWUP || '', UMSG: lead?.UMSG || '' });
+  const [commsForm, setCommsForm] = useState({ 
+    FOLLOWUP: lead?.FOLLOWUP || '', 
+    UMSG: lead?.UMSG || '',
+    REMINDER_DATE: lead?.REMINDER_DATE || ''
+  });
 
   const [selectedQuote, setSelectedQuote] = useState<SavedQuote | null>(null);
 
@@ -291,9 +295,43 @@ export function LeadDetailClient({ id }: { id: string }) {
                       <p className="text-xs text-rose-400 mt-1">O formato anterior não é uma data válida. Atualize.</p>
                     )}
                   </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-400 block">Agendar Lembrete (REMINDER_DATE)</label>
+                    <input 
+                      type="datetime-local"
+                      value={(() => {
+                        try {
+                          if (!commsForm.REMINDER_DATE) return '';
+                          const d = new Date(commsForm.REMINDER_DATE);
+                          if (isNaN(d.getTime())) return '';
+                          return d.toISOString().slice(0, 16);
+                        } catch(e) { return ''; }
+                      })()} 
+                      onChange={e => {
+                        try {
+                          const d = new Date(e.target.value);
+                          if (!isNaN(d.getTime())) {
+                            setCommsForm({...commsForm, REMINDER_DATE: d.toISOString()});
+                          }
+                        } catch(e) {}
+                      }} 
+                      className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50" 
+                    />
+                    {commsForm.REMINDER_DATE && isNaN(new Date(commsForm.REMINDER_DATE).getTime()) && (
+                      <p className="text-xs text-rose-400 mt-1">O formato anterior não é uma data válida. Atualize.</p>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <>
+                  <div className="bg-zinc-900/50 p-4 rounded-xl border border-white/10">
+                    <span className="text-xs text-zinc-400 block mb-1">Próximo Lembrete / Tarefa</span>
+                    <p className="text-sm font-medium text-emerald-400">
+                      {lead.REMINDER_DATE && !isNaN(new Date(lead.REMINDER_DATE).getTime()) 
+                        ? new Date(lead.REMINDER_DATE).toLocaleString('pt-BR', { dateStyle: 'medium', timeStyle: 'short' }) 
+                        : 'Sem lembrete agendado.'}
+                    </p>
+                  </div>
                   <div className="bg-zinc-900/50 p-4 rounded-xl border border-white/10">
                     <span className="text-xs text-zinc-400 block mb-1">Último Contato Realizado (UMSG)</span>
                     <p className="text-sm font-medium">
@@ -310,6 +348,73 @@ export function LeadDetailClient({ id }: { id: string }) {
               )}
             </div>
           </div>
+
+          {/* Quick Copy Feature for RingCentral */}
+          <div className="bg-emerald-900/10 border border-emerald-900/20 text-zinc-900 rounded-2xl shadow-sm overflow-hidden mt-6">
+            <div className="p-6 border-b border-emerald-900/10 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold mb-1 text-emerald-800">Quick Messages</h2>
+                <p className="text-sm text-emerald-700/80">Copy & paste to RingCentral/WhatsApp (English)</p>
+              </div>
+            </div>
+            <div className="p-6 pt-4 space-y-3">
+              <button 
+                onClick={() => {
+                  const msg = `Hi ${lead.Nome?.split(' ')[0] || ''}, this is Star Cleaning! We received your quote request. Do you have a quick minute to chat?`;
+                  navigator.clipboard.writeText(msg);
+                  alert('Message copied to clipboard!');
+                }}
+                className="w-full text-left p-3 rounded-xl bg-white border border-emerald-100 hover:border-emerald-300 hover:shadow-sm transition-all group"
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">1st Contact</span>
+                  <span className="text-[10px] text-zinc-400 group-hover:text-emerald-500 font-medium">Click to copy</span>
+                </div>
+                <p className="text-sm text-zinc-600 line-clamp-2">Hi {lead.Nome?.split(' ')[0] || ''}, this is Star Cleaning! We received your...</p>
+              </button>
+
+              <button 
+                onClick={() => {
+                  const firstName = lead.Nome?.split(' ')[0] || '';
+                  let quoteText = '';
+                  if (leadQuotes && leadQuotes.length > 0) {
+                    const q = leadQuotes[0];
+                    quoteText = ` based on the details of your home, it would be around $${q.total} for a ${q.serviceType} cleaning. `;
+                  } else if (lead.Inicial) {
+                    quoteText = ` your initial estimate is around $${lead.Inicial}${lead.Final ? ' to $' + lead.Final : ''}. `;
+                  } else {
+                    quoteText = ` I've prepared a special quote for you. `;
+                  }
+                  const msg = `Hi ${firstName}, this is Star Cleaning again.${quoteText}What do you think? Can we get you scheduled?`;
+                  navigator.clipboard.writeText(msg);
+                  alert('Message copied to clipboard!');
+                }}
+                className="w-full text-left p-3 rounded-xl bg-white border border-emerald-100 hover:border-emerald-300 hover:shadow-sm transition-all group"
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Send Quote</span>
+                  <span className="text-[10px] text-zinc-400 group-hover:text-emerald-500 font-medium">Click to copy</span>
+                </div>
+                <p className="text-sm text-zinc-600 line-clamp-2">Hi {lead.Nome?.split(' ')[0] || ''}, this is Star Cleaning again. I've prepared...</p>
+              </button>
+
+              <button 
+                onClick={() => {
+                  const msg = `Hi ${lead.Nome?.split(' ')[0] || ''}, just checking in to see if you had a chance to look over our proposal. Let me know if you have any questions!`;
+                  navigator.clipboard.writeText(msg);
+                  alert('Message copied to clipboard!');
+                }}
+                className="w-full text-left p-3 rounded-xl bg-white border border-emerald-100 hover:border-emerald-300 hover:shadow-sm transition-all group"
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Short Follow-up</span>
+                  <span className="text-[10px] text-zinc-400 group-hover:text-emerald-500 font-medium">Click to copy</span>
+                </div>
+                <p className="text-sm text-zinc-600 line-clamp-2">Hi {lead.Nome?.split(' ')[0] || ''}, just checking in to see if you had a chance...</p>
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
 
