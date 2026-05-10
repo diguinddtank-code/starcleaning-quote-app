@@ -2,16 +2,19 @@
 
 import { useLead } from '@/context/LeadContext';
 import { useQuote } from '@/context/QuoteContext';
+import { useSettings } from '@/context/SettingsContext';
 import { notFound, useRouter } from 'next/navigation';
-import { User, Mail, Phone, MapPin, Calendar, Edit3, MessageCircle, FileText, ArrowLeft, Loader2, Save, X, DollarSign } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Calendar, Edit3, MessageCircle, FileText, ArrowLeft, Loader2, Save, X, DollarSign, Printer, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Lead } from '@/lib/types';
+import { Lead, SavedQuote } from '@/lib/types';
 import { motion, AnimatePresence } from 'motion/react';
+import { QuoteDocument } from '@/components/QuoteDocument';
 
 export function LeadDetailClient({ id }: { id: string }) {
   const { leads, updateLead } = useLead();
   const { savedQuotes } = useQuote();
+  const { settings } = useSettings();
   const router = useRouter();
   const lead = leads.find(l => l.id === id);
 
@@ -21,6 +24,8 @@ export function LeadDetailClient({ id }: { id: string }) {
 
   const [isEditingComms, setIsEditingComms] = useState(false);
   const [commsForm, setCommsForm] = useState({ FOLLOWUP: lead?.FOLLOWUP || '', UMSG: lead?.UMSG || '' });
+
+  const [selectedQuote, setSelectedQuote] = useState<SavedQuote | null>(null);
 
   if (!leads.length) {
     return <div className="flex h-screen items-center justify-center text-zinc-500"><Loader2 className="animate-spin w-8 h-8" /></div>;
@@ -105,16 +110,23 @@ export function LeadDetailClient({ id }: { id: string }) {
               </div>
               <div className="divide-y divide-zinc-100">
                 {leadQuotes.map(q => (
-                  <div key={q.id} className="p-4 hover:bg-zinc-50 flex items-center justify-between transition-colors">
+                  <button 
+                    key={q.id} 
+                    onClick={() => setSelectedQuote(q)}
+                    className="w-full p-4 hover:bg-sky-50 flex items-center justify-between transition-colors text-left group"
+                  >
                     <div>
-                      <h4 className="font-semibold text-zinc-900">{q.serviceType} <span className="text-zinc-500 font-normal uppercase text-xs">({q.frequency})</span></h4>
+                      <h4 className="font-semibold text-zinc-900 group-hover:text-sky-700 transition-colors">{q.serviceType} <span className="text-zinc-500 font-normal uppercase text-xs">({q.frequency})</span></h4>
                       <p className="text-xs text-zinc-500 mt-1">{new Date(q.date).toLocaleDateString()} &middot; {q.sqFt} sqft</p>
                     </div>
-                    <div className="text-right">
-                      <div className="font-bold text-zinc-900">${q.total}</div>
-                      <div className="text-xs text-zinc-500 font-semibold uppercase">{q.status}</div>
+                    <div className="text-right flex items-center gap-3">
+                      <div>
+                        <div className="font-bold text-zinc-900 group-hover:text-sky-700 transition-colors">${q.total}</div>
+                        <div className="text-xs text-zinc-500 font-semibold uppercase">{q.status}</div>
+                      </div>
+                      <ChevronRight size={16} className="text-zinc-300 group-hover:text-sky-500 transition-colors" />
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -269,6 +281,47 @@ export function LeadDetailClient({ id }: { id: string }) {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {selectedQuote && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm z-50 overflow-y-auto print:bg-white print:p-0"
+          >
+            <div className="flex min-h-full items-start justify-center p-4 sm:p-6 md:py-12">
+              <motion.div 
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                transition={{ type: "spring", duration: 0.5 }}
+                className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-zinc-200 overflow-hidden print:border-none print:shadow-none print:m-0 relative"
+              >
+                <div className="bg-zinc-50 border-b border-zinc-200 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
+                  <div className="flex items-center gap-2 text-zinc-900 font-bold">
+                    <FileText size={20} className="text-sky-600" /> Estimate Details
+                  </div>
+                  <div className="flex w-full sm:w-auto gap-2">
+                    <button onClick={() => window.print()} className="flex-1 sm:flex-none justify-center px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-sm">
+                      <Printer size={16} /> Print / PDF
+                    </button>
+                    <button 
+                      onClick={() => setSelectedQuote(null)} 
+                      className="flex-1 sm:flex-none justify-center px-6 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-bold rounded-lg transition-colors shadow-sm"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+                <div className="p-0 sm:p-8 print:p-0">
+                  <QuoteDocument quote={selectedQuote} settings={settings} />
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
