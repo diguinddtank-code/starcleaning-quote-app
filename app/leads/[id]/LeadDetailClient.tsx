@@ -232,48 +232,79 @@ export function LeadDetailClient({ id }: { id: string }) {
                 <h2 className="text-lg font-bold mb-1">Communications</h2>
                 <p className="text-sm text-zinc-400">Track messages and followups</p>
               </div>
-              <button 
-                onClick={() => isEditingComms ? handleSaveComms() : setIsEditingComms(true)}
-                disabled={isSaving}
-                className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/10"
-              >
-                {isEditingComms ? (isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />) : <Edit3 size={16} />}
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={async () => {
+                    await updateLead(lead.id, { UMSG: new Date().toISOString() });
+                  }}
+                  className="px-3 py-1.5 bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs font-semibold rounded-lg transition-colors border border-sky-400/30"
+                  title="Marca que você enviou mensagem hoje"
+                >
+                  Registrar Contato Hoje
+                </button>
+                <button 
+                  onClick={() => isEditingComms ? handleSaveComms() : setIsEditingComms(true)}
+                  disabled={isSaving}
+                  className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/10"
+                >
+                  {isEditingComms ? (isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />) : <Edit3 size={16} />}
+                </button>
+              </div>
             </div>
             
             <div className="p-6 pt-4 space-y-4 relative z-10">
               {isEditingComms ? (
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-400 block">Followup Date / Notes</label>
+                    <label className="text-xs font-semibold text-zinc-400 block">Detalhes do Followup ou Anotações</label>
                     <input 
                       type="text" 
                       value={commsForm.FOLLOWUP || ''} 
                       onChange={e => setCommsForm({...commsForm, FOLLOWUP: e.target.value})} 
-                      placeholder="e.g. Call back on Friday"
+                      placeholder="e.g. Ligar de volta na sexta"
                       className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50" 
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-400 block">Last Message Details (UMSG)</label>
-                    <textarea 
-                      rows={3}
-                      value={commsForm.UMSG || ''} 
-                      onChange={e => setCommsForm({...commsForm, UMSG: e.target.value})} 
-                      placeholder="e.g. Sent price quote, waiting for wife to reply..."
-                      className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50 resize-none" 
+                    <label className="text-xs font-semibold text-zinc-400 block">Data do Último Contato (UMSG)</label>
+                    <input 
+                      type="datetime-local"
+                      value={(() => {
+                        try {
+                          if (!commsForm.UMSG) return '';
+                          const d = new Date(commsForm.UMSG);
+                          if (isNaN(d.getTime())) return '';
+                          return d.toISOString().slice(0, 16);
+                        } catch(e) { return ''; }
+                      })()} 
+                      onChange={e => {
+                        try {
+                          const d = new Date(e.target.value);
+                          if (!isNaN(d.getTime())) {
+                            setCommsForm({...commsForm, UMSG: d.toISOString()});
+                          }
+                        } catch(e) {}
+                      }} 
+                      className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50" 
                     />
+                    {commsForm.UMSG && isNaN(new Date(commsForm.UMSG).getTime()) && (
+                      <p className="text-xs text-rose-400 mt-1">O formato anterior não é uma data válida. Atualize.</p>
+                    )}
                   </div>
                 </div>
               ) : (
                 <>
                   <div className="bg-zinc-900/50 p-4 rounded-xl border border-white/10">
-                    <span className="text-xs text-zinc-400 block mb-1">Followup</span>
-                    <p className="text-sm font-medium">{lead.FOLLOWUP || 'No followup set.'}</p>
+                    <span className="text-xs text-zinc-400 block mb-1">Último Contato Realizado (UMSG)</span>
+                    <p className="text-sm font-medium">
+                      {lead.UMSG && !isNaN(new Date(lead.UMSG).getTime()) 
+                        ? new Date(lead.UMSG).toLocaleString('pt-BR', { dateStyle: 'medium', timeStyle: 'short' }) 
+                        : (lead.UMSG || 'Nenhum contato registrado.')}
+                    </p>
                   </div>
                   <div className="bg-zinc-900/50 p-4 rounded-xl border border-white/10">
-                    <span className="text-xs text-zinc-400 block mb-1">Last Message / Result</span>
-                    <p className="text-sm font-medium whitespace-normal break-words">{lead.UMSG || 'No message recorded.'}</p>
+                    <span className="text-xs text-zinc-400 block mb-1">Followup / Notas</span>
+                    <p className="text-sm font-medium whitespace-normal break-words">{lead.FOLLOWUP || 'Nenhuma anotação.'}</p>
                   </div>
                 </>
               )}

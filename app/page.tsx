@@ -42,6 +42,28 @@ export default function DashboardPage() {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
 
+  // Sales Assistant Logic
+  const today = new Date();
+  const getDaysDifference = (dateString: string | undefined | null) => {
+    if (!dateString) return Infinity;
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return Infinity;
+    const diffTime = Math.abs(today.getTime() - d.getTime());
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const opportunities = leads.filter(l => {
+    const stage = l.ETAPA?.toLowerCase() || 'novo';
+    if (stage.includes('agendado') || stage.includes('interesse') || stage.includes('não responde')) return false;
+
+    const daysSinceLastMessage = getDaysDifference(l.UMSG);
+    
+    if (stage.includes('novo')) return true;
+    if (stage.includes('negociando') && daysSinceLastMessage >= 2) return true;
+    if (stage.includes('primeiro contato') && daysSinceLastMessage >= 3) return true;
+    return false;
+  }).sort((a, b) => getDaysDifference(a.UMSG) - getDaysDifference(b.UMSG)).slice(0, 4);
+
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -136,6 +158,49 @@ export default function DashboardPage() {
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Sales Assistant Widget */}
+      {opportunities.length > 0 && (
+        <motion.div variants={itemVariants} className="bg-sky-50 border border-sky-100 rounded-2xl shadow-sm p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+            <Activity size={120} />
+          </div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="text-sky-600" size={20} />
+              <h2 className="text-lg font-bold text-sky-900">Assistente de Vendas</h2>
+              <span className="ml-2 bg-sky-200 text-sky-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Oportunidades</span>
+            </div>
+            <p className="text-sm text-sky-700 mb-6">Estes leads precisam da sua atenção hoje para não esfriarem.</p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {opportunities.map(lead => {
+                const days = getDaysDifference(lead.UMSG);
+                const isNew = lead.ETAPA?.toLowerCase() === 'novo' || lead.ETAPA?.toLowerCase() === 'new' || !lead.ETAPA;
+                return (
+                  <Link href={`/leads/${lead.id}`} key={lead.id} className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-sky-100 group">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded ${isNew ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                        {isNew ? 'Lead Novo' : 'Acompanhar'}
+                      </span>
+                      {days !== Infinity && !isNew && (
+                        <span className="text-xs font-semibold text-rose-500">
+                          {days === 0 ? 'Hoje' : `${days} dias quieto`}
+                        </span>
+                      )}
+                    </div>
+                    <p className="font-bold text-zinc-900 group-hover:text-sky-700 truncate">{lead.Nome || 'Cliente sem nome'}</p>
+                    <p className="text-xs text-zinc-500 truncate mb-3">{lead.Telefone || lead.Email || 'Sem contato'}</p>
+                    <div className="text-sky-600 font-semibold text-xs flex items-center group-hover:underline">
+                      Ver detalhes <ArrowRight size={12} className="ml-1" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <motion.div 
