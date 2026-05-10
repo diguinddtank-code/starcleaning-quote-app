@@ -2,7 +2,7 @@
 
 import { useLead } from '@/context/LeadContext';
 import { User, Phone, Calendar, Mail, MapPin, Edit3, Trash2, X, Search, FileText, KanbanSquare, LayoutList, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Lead } from '@/lib/types';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
@@ -10,8 +10,17 @@ import Link from 'next/link';
 export default function LeadsPage() {
   const { leads, deleteLead, updateLead } = useLead();
   const [filterQuery, setFilterQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [statusFilter, setStatusFilter] = useState<string>('Todos');
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(filterQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [filterQuery]);
   
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [editForm, setEditForm] = useState<Partial<Lead>>({});
@@ -37,39 +46,43 @@ export default function LeadsPage() {
 
   const kanbanColumns = ['Novo', 'Primeiro Contato', 'Negociando', 'Agendado', 'Não Responde', 'Sem Interesse', 'Outros'];
 
-  const searchedLeads = leads.filter(l => {
-    if (!filterQuery) return true;
-    const lowerQuery = filterQuery.toLowerCase();
-    return (
+  // Memoize searched leads using the debounced query
+  const searchedLeads = useMemo(() => {
+    if (!debouncedQuery) return leads;
+    const lowerQuery = debouncedQuery.toLowerCase();
+    return leads.filter(l => (
       l.Nome?.toLowerCase().includes(lowerQuery) ||
       l.Email?.toLowerCase().includes(lowerQuery) ||
       l.Telefone?.toLowerCase().includes(lowerQuery) ||
       l.ETAPA?.toLowerCase().includes(lowerQuery) ||
       l.UMSG?.toLowerCase().includes(lowerQuery) ||
       l.OBSERVACOES?.toLowerCase().includes(lowerQuery)
-    );
-  });
+    ));
+  }, [leads, debouncedQuery]);
 
-  const filteredLeads = searchedLeads
-    .filter(l => {
-      if (statusFilter !== 'Todos' && getKanbanStage(l.ETAPA) !== statusFilter) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      if (a.UMSG && !b.UMSG) return -1;
-      if (!a.UMSG && b.UMSG) return 1;
-      if (a.UMSG && b.UMSG) {
-        const dateA = new Date(a.UMSG).getTime();
-        const dateB = new Date(b.UMSG).getTime();
-        if (!isNaN(dateA) && !isNaN(dateB)) {
-          return dateB - dateA;
+  // Memoize filtered and sorted leads
+  const filteredLeads = useMemo(() => {
+    return searchedLeads
+      .filter(l => {
+        if (statusFilter !== 'Todos' && getKanbanStage(l.ETAPA) !== statusFilter) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        if (a.UMSG && !b.UMSG) return -1;
+        if (!a.UMSG && b.UMSG) return 1;
+        if (a.UMSG && b.UMSG) {
+          const dateA = new Date(a.UMSG).getTime();
+          const dateB = new Date(b.UMSG).getTime();
+          if (!isNaN(dateA) && !isNaN(dateB)) {
+            return dateB - dateA;
+          }
+          return b.UMSG.localeCompare(a.UMSG);
         }
-        return b.UMSG.localeCompare(a.UMSG);
-      }
-      const timeA = a.updated_at ? new Date(a.updated_at).getTime() : (a.created_at ? new Date(a.created_at).getTime() : 0);
-      const timeB = b.updated_at ? new Date(b.updated_at).getTime() : (b.created_at ? new Date(b.created_at).getTime() : 0);
-      return timeB - timeA;
-    });
+        const timeA = a.updated_at ? new Date(a.updated_at).getTime() : (a.created_at ? new Date(a.created_at).getTime() : 0);
+        const timeB = b.updated_at ? new Date(b.updated_at).getTime() : (b.created_at ? new Date(b.created_at).getTime() : 0);
+        return timeB - timeA;
+      });
+  }, [searchedLeads, statusFilter]);
 
   const handleStatusChange = async (leadId: string, newStatus: string) => {
     await updateLead(leadId, { ETAPA: newStatus });

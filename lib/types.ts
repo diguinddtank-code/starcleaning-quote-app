@@ -22,6 +22,7 @@ export interface PricingSettings {
     laundry: number;
     cabinets: number;
     garage: number;
+    bedChange: number;
   };
 }
 
@@ -54,6 +55,7 @@ export interface QuoteState {
   beds: number;
   baths: number;
   halfBaths: number;
+  bedsToChange: number;
   serviceType: ServiceType;
   frequency: ServiceFrequency;
   selectedExtras: string[];

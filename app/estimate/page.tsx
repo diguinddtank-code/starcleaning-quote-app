@@ -72,6 +72,9 @@ function CalculatorContent() {
     hours += quote.beds * 0.25;
     hours += quote.baths * 0.5;
     hours += quote.halfBaths * 0.25;
+    if (quote.bedsToChange && quote.bedsToChange > 0) {
+      hours += quote.bedsToChange * 0.25; // 15 mins per bed
+    }
 
     let multiplier = 1;
     if (quote.serviceType === 'deep') multiplier = 1.5;
@@ -181,8 +184,14 @@ function CalculatorContent() {
               <Stepper 
                 label="Bedrooms" 
                 value={quote.beds} 
-                onChange={(val) => updateQuote({ beds: val })} 
+                onChange={(val) => updateQuote({ beds: val, bedsToChange: Math.min(val, quote.bedsToChange || 0) })} 
                 min={0} max={10} 
+              />
+              <Stepper 
+                label="Bed Linens to Change" 
+                value={quote.bedsToChange || 0} 
+                onChange={(val) => updateQuote({ bedsToChange: val })} 
+                min={0} max={quote.beds} 
               />
               <Stepper 
                 label="Bathrooms" 
@@ -190,14 +199,12 @@ function CalculatorContent() {
                 onChange={(val) => updateQuote({ baths: val })} 
                 min={0} max={10} 
               />
-              <div className="col-span-1 md:col-span-2">
-                <Stepper 
-                  label="Half Baths" 
-                  value={quote.halfBaths} 
-                  onChange={(val) => updateQuote({ halfBaths: val })} 
-                  min={0} max={5} 
-                />
-              </div>
+              <Stepper 
+                label="Half Baths" 
+                value={quote.halfBaths} 
+                onChange={(val) => updateQuote({ halfBaths: val })} 
+                min={0} max={5} 
+              />
             </div>
           </section>
 
@@ -345,6 +352,13 @@ function CalculatorContent() {
                 <span>Rooms ({quote.beds}B, {quote.baths}BA)</span>
                 <span className="font-medium text-zinc-900">${(quote.beds * settings.bedPrice) + (quote.baths * settings.bathPrice) + (quote.halfBaths * settings.halfBathPrice)}</span>
               </div>
+              
+              {(quote.bedsToChange || 0) > 1 && (
+                <div className="flex justify-between text-zinc-600">
+                  <span>Bed Linens ({quote.bedsToChange} - 1st Free)</span>
+                  <span className="font-medium text-zinc-900">${((quote.bedsToChange || 0) - 1) * (settings.extras?.bedChange || 10)}</span>
+                </div>
+              )}
               
               {quote.serviceType !== 'residential' && (
                 <div className="flex justify-between text-sky-600 font-medium bg-sky-50/50 p-2 rounded-lg -mx-2">

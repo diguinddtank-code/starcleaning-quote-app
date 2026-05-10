@@ -33,7 +33,8 @@ export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
   };
 
   const multiplier = getMultiplier();
-  const subtotal = settings.basePrice + areaPrice + roomsPrice;
+  const bedChangeCharge = ((quote.bedsToChange || 0) > 1) ? ((quote.bedsToChange || 0) - 1) * (settings.extras?.bedChange || 10) : 0;
+  const subtotal = settings.basePrice + areaPrice + roomsPrice + bedChangeCharge;
   const serviceTotal = Math.round(subtotal * multiplier);
   
   const validUntil = new Date(quote.date);
@@ -144,6 +145,15 @@ export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
               </td>
               <td className="py-3 text-right font-medium text-zinc-900">${roomsPrice}</td>
             </tr>
+            {(quote.bedsToChange || 0) > 1 && (
+              <tr>
+                <td className="py-3 text-zinc-700">
+                  <span className="font-medium text-zinc-900 block">Bed Linens Change</span>
+                  <span className="text-xs text-zinc-500">{quote.bedsToChange} Beds (1st one is complimentary)</span>
+                </td>
+                <td className="py-3 text-right font-medium text-zinc-900">${((quote.bedsToChange || 0) - 1) * (settings.extras?.bedChange || 10)}</td>
+              </tr>
+            )}
             {quote.selectedExtras.length > 0 && (
               <tr>
                 <td className="py-3 text-zinc-700" colSpan={2}>

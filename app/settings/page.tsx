@@ -120,7 +120,7 @@ export default function SettingsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {Object.entries(localSettings.extras).map(([key, value]) => (
               <div key={key}>
-                <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 capitalize">{key}</label>
+                <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</label>
                 <input type="number" value={value} onChange={(e) => handleChange(key, Number(e.target.value), true)} className="w-full px-3 py-2.5 text-sm rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500" />
               </div>
             ))}

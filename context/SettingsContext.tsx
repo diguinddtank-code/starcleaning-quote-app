@@ -25,6 +25,7 @@ const defaultSettings: PricingSettings = {
     laundry: 20,
     cabinets: 100,
     garage: 50,
+    bedChange: 10,
   },
 };
 
@@ -53,6 +54,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             .single();
 
           if (data && !error) {
+            const defaultExtras = { oven: 40, fridge: 60, windows: 85, laundry: 20, cabinets: 100, garage: 50, bedChange: 10 };
             const mappedSettings: PricingSettings = {
               basePrice: Number(data.base_price),
               pricePerSqFt: Number(data.price_per_sq_ft),
@@ -67,7 +69,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
               weeklyMultiplier: Number(data.weekly_multiplier || 0.8),
               biWeeklyMultiplier: Number(data.bi_weekly_multiplier || 0.85),
               monthlyMultiplier: Number(data.monthly_multiplier || 0.9),
-              extras: data.extras as any,
+              extras: { ...defaultExtras, ...(data.extras || {}) } as any,
             };
             setSettings(mappedSettings);
           }
@@ -81,6 +83,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, (payload) => {
             const data = payload.new as any;
             if (data && data.id === 1) {
+              const defaultExtras = { oven: 40, fridge: 60, windows: 85, laundry: 20, cabinets: 100, garage: 50, bedChange: 10 };
               setSettings({
                 basePrice: Number(data.base_price),
                 pricePerSqFt: Number(data.price_per_sq_ft),
@@ -95,7 +98,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                 weeklyMultiplier: Number(data.weekly_multiplier || 0.8),
                 biWeeklyMultiplier: Number(data.bi_weekly_multiplier || 0.85),
                 monthlyMultiplier: Number(data.monthly_multiplier || 0.9),
-                extras: data.extras as any,
+                extras: { ...defaultExtras, ...(data.extras || {}) } as any,
               });
             }
           })

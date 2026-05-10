@@ -21,6 +21,7 @@ const defaultQuote: QuoteState = {
   beds: 3,
   baths: 2,
   halfBaths: 0,
+  bedsToChange: 0,
   serviceType: 'residential',
   frequency: 'one-time',
   selectedExtras: [],
@@ -57,6 +58,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
               beds: q.beds,
               baths: q.baths,
               halfBaths: q.half_baths,
+              bedsToChange: q.beds_to_change || 0,
               serviceType: q.service_type as any,
               frequency: q.frequency as any,
               total: q.total,
@@ -102,6 +104,11 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
     total += quote.beds * settings.bedPrice;
     total += quote.baths * settings.bathPrice;
     total += quote.halfBaths * settings.halfBathPrice;
+
+    // Bed changing logic: 1st bed is free!
+    if (quote.bedsToChange && quote.bedsToChange > 1) {
+      total += (quote.bedsToChange - 1) * (settings.extras?.bedChange || 10);
+    }
 
     if (quote.serviceType === 'deep') {
       total *= settings.deepCleanMultiplier;
@@ -189,6 +196,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
         beds: quote.beds,
         baths: quote.baths,
         half_baths: quote.halfBaths,
+        beds_to_change: quote.bedsToChange,
         service_type: quote.serviceType,
         frequency: quote.frequency,
         total: totalPrice,
