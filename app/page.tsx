@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useLead } from '@/context/LeadContext';
 import { useQuote } from '@/context/QuoteContext';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { 
   Users, PlusCircle, History, ArrowRight, 
   BarChart2, Calculator, BookOpen, 
@@ -16,13 +17,12 @@ export default function DashboardPage() {
   const { leads } = useLead();
   const { savedQuotes } = useQuote();
   const { user } = useAuth();
+  const { language, t, translateStage } = useLanguage();
   
   // Metrics
   const totalLeads = leads.length;
   const newLeadsCount = leads.filter(l => l.ETAPA?.toLowerCase().includes('novo') || l.ETAPA?.toLowerCase() === 'new').length;
-  const negotiatingCount = leads.filter(l => l.ETAPA?.toLowerCase().includes('negociando')).length;
   const scheduledCount = leads.filter(l => l.ETAPA?.toLowerCase().includes('agendado')).length;
-  const totalQuotesValue = savedQuotes.reduce((acc, q) => acc + (q.total || 0), 0);
   
   const recentLeads = [...leads]
     .sort((a, b) => {
@@ -48,7 +48,6 @@ export default function DashboardPage() {
     if (!dateString) return Infinity;
     const d = new Date(dateString);
     if (isNaN(d.getTime())) return Infinity;
-    // Calculate difference allowing for negative/positive signs for reminders
     const diffTime = today.getTime() - d.getTime();
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
   };
@@ -69,10 +68,8 @@ export default function DashboardPage() {
     if (!l.REMINDER_DATE) return false;
     const reminderDate = new Date(l.REMINDER_DATE);
     if (isNaN(reminderDate.getTime())) return false;
-    
-    // Reminders that are due (in the past, today, or tomorrow)
     const diff = getDaysDifference(l.REMINDER_DATE);
-    return diff >= -1; // -1 means tomorrow, 0 means today, >0 means overdue
+    return diff >= -1;
   }).sort((a, b) => new Date(a.REMINDER_DATE!).getTime() - new Date(b.REMINDER_DATE!).getTime());
 
   const containerVariants = {
@@ -93,15 +90,15 @@ export default function DashboardPage() {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
         <div>
           <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">
-            Bom dia{user?.email ? `, ${user.email.split('@')[0]}` : ''}.
+            {t('db.morning')}{user?.email ? `, ${user.email.split('@')[0]}` : ''}.
           </h1>
-          <p className="text-zinc-500 mt-1">Aqui está o resumo da sua operação hoje.</p>
+          <p className="text-zinc-500 mt-1">{t('db.summary')}</p>
         </div>
         <Link 
           href="/estimate" 
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg transition-all shadow-sm hover:shadow"
         >
-          <PlusCircle size={18} /> Novo Orçamento
+          <PlusCircle size={18} /> {t('nav.estimate')}
         </Link>
       </header>
 
@@ -116,11 +113,11 @@ export default function DashboardPage() {
             <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
               <Users size={20} />
             </div>
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Total Leads</span>
+            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t('db.total_leads')}</span>
           </div>
           <div className="flex items-baseline gap-2">
             <h3 className="text-3xl font-bold text-zinc-900">{totalLeads}</h3>
-            <span className="text-sm font-medium text-emerald-600 flex items-center"><TrendingUp size={14} className="mr-1"/> Ativos</span>
+            <span className="text-sm font-medium text-emerald-600 flex items-center"><TrendingUp size={14} className="mr-1"/> {t('db.active')}</span>
           </div>
         </motion.div>
 
@@ -136,7 +133,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-baseline gap-2 relative z-10">
             <h3 className="text-3xl font-bold text-zinc-900">{newLeadsCount}</h3>
-            <span className="text-sm font-medium text-zinc-500">na caixa de entrada</span>
+            <span className="text-sm font-medium text-zinc-500">{t('db.inbox')}</span>
           </div>
         </motion.div>
 
@@ -152,7 +149,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-baseline gap-2 relative z-10">
             <h3 className="text-3xl font-bold text-zinc-900">{scheduledCount}</h3>
-            <span className="text-sm font-medium text-zinc-500">convertidos</span>
+            <span className="text-sm font-medium text-zinc-500">{t('db.converted')}</span>
           </div>
         </motion.div>
 
@@ -161,11 +158,11 @@ export default function DashboardPage() {
             <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
               <FileText size={20} />
             </div>
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Estimates</span>
+            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t('nav.quotes')}</span>
           </div>
           <div className="flex items-baseline gap-2">
             <h3 className="text-3xl font-bold text-zinc-900">{savedQuotes.length}</h3>
-            <span className="text-sm font-medium text-zinc-500">gerados</span>
+            <span className="text-sm font-medium text-zinc-500">{t('db.generated')}</span>
           </div>
         </motion.div>
       </motion.div>
@@ -179,7 +176,7 @@ export default function DashboardPage() {
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-4">
               <Bell className="text-emerald-600" size={20} />
-              <h2 className="text-lg font-bold text-emerald-900">Lembretes & Tarefas</h2>
+              <h2 className="text-lg font-bold text-emerald-900">{t('db.reminders')}</h2>
               <span className="ml-2 bg-emerald-200 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">{reminders.length} Pendentes</span>
             </div>
             <p className="text-sm text-emerald-700 mb-6">Contatos e follow-ups agendados baseados nos seus lembretes.</p>
@@ -196,7 +193,7 @@ export default function DashboardPage() {
                     <div>
                       <div className="flex justify-between items-start mb-2">
                         <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded ${isOverdue ? 'bg-rose-100 text-rose-700' : isToday ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                          {isOverdue ? 'Atrasado' : isToday ? 'Hoje' : 'Amanhã'}
+                          {isOverdue ? (t('language') === 'en' ? 'Overdue' : 'Atrasado') : isToday ? (t('language') === 'en' ? 'Today' : 'Hoje') : (t('language') === 'en' ? 'Tomorrow' : 'Amanhã')}
                         </span>
                         <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
                           <Calendar size={12} /> {timeString}
@@ -206,7 +203,7 @@ export default function DashboardPage() {
                       <p className="text-xs text-zinc-500 line-clamp-2 mt-1 mb-3">{lead.FOLLOWUP || 'Sem detalhes'}</p>
                     </div>
                     <div className="text-emerald-600 font-semibold text-xs flex items-center group-hover:underline mt-auto">
-                      Abrir Lead <ArrowRight size={12} className="ml-1" />
+                      {t('language') === 'en' ? 'Open Lead' : 'Abrir Lead'} <ArrowRight size={12} className="ml-1" />
                     </div>
                   </Link>
                 );
@@ -225,7 +222,7 @@ export default function DashboardPage() {
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-4">
               <Activity className="text-sky-600" size={20} />
-              <h2 className="text-lg font-bold text-sky-900">Assistente de Vendas</h2>
+              <h2 className="text-lg font-bold text-sky-900">{t('db.assistant')}</h2>
               <span className="ml-2 bg-sky-200 text-sky-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Oportunidades</span>
             </div>
             <p className="text-sm text-sky-700 mb-6">Estes leads precisam da sua atenção hoje para não esfriarem.</p>
@@ -238,18 +235,18 @@ export default function DashboardPage() {
                   <Link href={`/leads/${lead.id}`} key={lead.id} className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-sky-100 group">
                     <div className="flex justify-between items-start mb-2">
                       <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded ${isNew ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                        {isNew ? 'Lead Novo' : 'Acompanhar'}
+                        {isNew ? (t('language') === 'en' ? 'New Lead' : 'Lead Novo') : (t('language') === 'en' ? 'Follow up' : 'Acompanhar')}
                       </span>
                       {days !== Infinity && !isNew && (
                         <span className="text-xs font-semibold text-rose-500">
-                          {days === 0 ? 'Hoje' : `${days} dias quieto`}
+                          {days === 0 ? (t('language') === 'en' ? 'Today' : 'Hoje') : (t('language') === 'en' ? `${days} days quiet` : `${days} dias quieto`)}
                         </span>
                       )}
                     </div>
                     <p className="font-bold text-zinc-900 group-hover:text-sky-700 truncate">{lead.Nome || 'Cliente sem nome'}</p>
                     <p className="text-xs text-zinc-500 truncate mb-3">{lead.Telefone || lead.Email || 'Sem contato'}</p>
                     <div className="text-sky-600 font-semibold text-xs flex items-center group-hover:underline">
-                      Ver detalhes <ArrowRight size={12} className="ml-1" />
+                      {t('language') === 'en' ? 'View details' : 'Ver detalhes'} <ArrowRight size={12} className="ml-1" />
                     </div>
                   </Link>
                 );
@@ -265,10 +262,10 @@ export default function DashboardPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-              <History className="text-zinc-400" size={20} /> Leads Recentes
+              <History className="text-zinc-400" size={20} /> {t('db.recent_leads')}
             </h2>
             <Link href="/leads" className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 group">
-              Ver Funil <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              {t('db.funnel')} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
           
@@ -298,7 +295,7 @@ export default function DashboardPage() {
                       lead.ETAPA?.toLowerCase().includes('negociando') ? 'bg-amber-100 text-amber-700' :
                       'bg-zinc-200 text-zinc-700'
                     }`}>
-                      {lead.ETAPA || 'Novo'}
+                      {translateStage(lead.ETAPA || 'Novo')}
                     </span>
                     <span className="text-[11px] text-zinc-400 mt-1 hidden sm:block">
                       {lead.Cidade ? lead.Cidade : (lead.Data ? new Date(lead.Data).toLocaleDateString() : '')}
@@ -310,7 +307,7 @@ export default function DashboardPage() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center space-y-3 py-10 border-2 border-dashed border-zinc-100 rounded-xl">
               <Users className="text-zinc-300" size={32} />
-              <p className="text-sm text-zinc-500">Nenhum lead disponível ainda.</p>
+              <p className="text-sm text-zinc-500">{t('language') === 'en' ? 'No leads available yet.' : 'Nenhum lead disponível ainda.'}</p>
             </div>
           )}
         </motion.div>
@@ -320,10 +317,10 @@ export default function DashboardPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-              <Calculator className="text-zinc-400" size={20} /> Orçamentos Recentes
+              <Calculator className="text-zinc-400" size={20} /> {t('db.recent_quotes')}
             </h2>
             <Link href="/history" className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 group">
-              Ver Histórico <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              {t('language') === 'en' ? 'View History' : 'Ver Histórico'} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
           
@@ -365,9 +362,9 @@ export default function DashboardPage() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center space-y-3 py-10 border-2 border-dashed border-zinc-100 rounded-xl">
               <FileText className="text-zinc-300" size={32} />
-              <p className="text-sm text-zinc-500">Nenhum orçamento gerado ainda.</p>
+              <p className="text-sm text-zinc-500">{t('language') === 'en' ? 'No quotes generated yet.' : 'Nenhum orçamento gerado ainda.'}</p>
               <Link href="/estimate" className="mt-2 text-sm text-sky-600 hover:underline">
-                Criar o primeiro
+                {t('language') === 'en' ? 'Create first' : 'Criar o primeiro'}
               </Link>
             </div>
           )}
@@ -375,31 +372,31 @@ export default function DashboardPage() {
       </div>
       
       {/* Quick Action Grid */}
-      <h2 className="text-xl font-bold text-zinc-900 pt-4">Acesso Rápido</h2>
+      <h2 className="text-xl font-bold text-zinc-900 pt-4">{t('db.access')}</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Link href="/estimate" className="bg-white p-4 rounded-xl border border-zinc-200 shadow-sm hover:shadow hover:border-sky-300 transition-all flex flex-col items-center justify-center text-center gap-2 group">
           <div className="w-12 h-12 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center group-hover:scale-110 transition-transform">
             <Calculator size={24} />
           </div>
-          <span className="text-sm font-semibold text-zinc-900">Novo Orçamento</span>
+          <span className="text-sm font-semibold text-zinc-900">{t('nav.estimate')}</span>
         </Link>
         <Link href="/leads" className="bg-white p-4 rounded-xl border border-zinc-200 shadow-sm hover:shadow hover:border-amber-300 transition-all flex flex-col items-center justify-center text-center gap-2 group">
           <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
             <Inbox size={24} />
           </div>
-          <span className="text-sm font-semibold text-zinc-900">Funil de Vendas</span>
+          <span className="text-sm font-semibold text-zinc-900">{t('db.funnel')}</span>
         </Link>
         <Link href="/kpi" className="bg-white p-4 rounded-xl border border-zinc-200 shadow-sm hover:shadow hover:border-emerald-300 transition-all flex flex-col items-center justify-center text-center gap-2 group">
           <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
             <BarChart2 size={24} />
           </div>
-          <span className="text-sm font-semibold text-zinc-900">KPIs e Métricas</span>
+          <span className="text-sm font-semibold text-zinc-900">{t('db.kpis')}</span>
         </Link>
         <Link href="/playbook" className="bg-white p-4 rounded-xl border border-zinc-200 shadow-sm hover:shadow hover:border-purple-300 transition-all flex flex-col items-center justify-center text-center gap-2 group">
           <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
             <BookOpen size={24} />
           </div>
-          <span className="text-sm font-semibold text-zinc-900">Sales Playbook</span>
+          <span className="text-sm font-semibold text-zinc-900">{t('db.playbook')}</span>
         </Link>
       </div>
 

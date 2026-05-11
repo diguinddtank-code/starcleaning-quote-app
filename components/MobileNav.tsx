@@ -5,17 +5,19 @@ import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Calculator, History, Settings, LogOut, BookOpen, BarChart2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export function MobileNav() {
   const pathname = usePathname();
   const { signOut } = useAuth();
+  const { t } = useLanguage();
 
   const navItems = [
-    { name: 'Home', href: '/', icon: LayoutDashboard },
-    { name: 'Estimate', href: '/estimate', icon: Calculator },
-    { name: 'Leads', href: '/leads', icon: History },
+    { name: t('nav.dashboard'), href: '/', icon: LayoutDashboard },
+    { name: t('nav.estimate'), href: '/estimate', icon: Calculator },
+    { name: t('nav.leads'), href: '/leads', icon: History },
     { name: 'KPIs', href: '/kpi', icon: BarChart2 },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: t('nav.settings'), href: '/settings', icon: Settings },
   ];
 
   return (

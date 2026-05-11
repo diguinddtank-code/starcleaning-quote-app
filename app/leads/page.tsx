@@ -1,6 +1,7 @@
 'use client';
 
 import { useLead } from '@/context/LeadContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { User, Phone, Calendar, Mail, MapPin, Edit3, Trash2, X, Search, FileText, KanbanSquare, LayoutList, ChevronRight } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { Lead } from '@/lib/types';
@@ -9,10 +10,11 @@ import Link from 'next/link';
 
 export default function LeadsPage() {
   const { leads, deleteLead, updateLead } = useLead();
+  const { language, t, translateStage } = useLanguage();
   const [filterQuery, setFilterQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
-  const [statusFilter, setStatusFilter] = useState<string>('Todos');
+  const [statusFilter, setStatusFilter] = useState<string>(language === 'en' ? 'All' : 'Todos');
 
   // Debounce search input
   useEffect(() => {
@@ -26,25 +28,19 @@ export default function LeadsPage() {
   const [editForm, setEditForm] = useState<Partial<Lead>>({});
   const [isSaving, setIsSaving] = useState(false);
 
-  const getKanbanStage = (status?: string) => {
-    const s = status?.trim()?.toLowerCase() || '';
-    if (s === 'agendado') return 'Agendado';
-    if (s === 'primeiro contato') return 'Primeiro Contato';
-    if (s === 'negociando') return 'Negociando';
-    if (s === 'não responde' || s === 'nao responde') return 'Não Responde';
-    if (s === 'sem interesse') return 'Sem Interesse';
-    if (s === 'novo' || s === 'novos' || s === 'nova' || s === 'new' || s === '') return 'Novo';
-    
-    // Fallbacks just in case
-    if (s.includes('agendado')) return 'Agendado';
-    if (s.includes('contato')) return 'Primeiro Contato';
-    if (s.includes('nego')) return 'Negociando';
-    if (s.includes('respond')) return 'Não Responde';
-    if (s.includes('interes')) return 'Sem Interesse';
-    return 'Outros';
-  };
+  const kanbanColumns = [
+    t('stage.novo'), 
+    t('stage.contato'), 
+    t('stage.negociando'), 
+    t('stage.agendado'), 
+    t('stage.nao_responde'), 
+    t('stage.sem_interesse'), 
+    t('stage.outros')
+  ];
 
-  const kanbanColumns = ['Novo', 'Primeiro Contato', 'Negociando', 'Agendado', 'Não Responde', 'Sem Interesse', 'Outros'];
+  const getKanbanStage = (status?: string) => {
+    return translateStage(status || '');
+  };
 
   // Memoize searched leads using the debounced query
   const searchedLeads = useMemo(() => {
@@ -140,7 +136,7 @@ export default function LeadsPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 tracking-tight">Lead CRM</h1>
-            <p className="text-sm text-zinc-500 mt-1">Gerencie todos os seus contatos e orçamentos em um lugar.</p>
+            <p className="text-sm text-zinc-500 mt-1">{t('leads.manage_all')}</p>
           </div>
           
           <div className="grid grid-cols-3 gap-3 md:gap-6">
@@ -150,11 +146,11 @@ export default function LeadsPage() {
             </div>
             <div className="bg-emerald-500 p-3 md:p-4 rounded-xl border border-emerald-600 shadow-sm shadow-emerald-500/20 flex flex-col items-center justify-center min-w-[100px] relative overflow-hidden">
               <div className="absolute top-0 right-0 p-1.5"><div className="w-1.5 h-1.5 bg-white rounded-full animate-ping opacity-75"></div></div>
-              <span className="text-emerald-50 text-[11px] md:text-xs font-semibold uppercase tracking-wider mb-1">Novos</span>
+              <span className="text-emerald-50 text-[11px] md:text-xs font-semibold uppercase tracking-wider mb-1">{language === 'en' ? 'New' : 'Novos'}</span>
               <span className="text-xl md:text-2xl font-bold text-white">{newLeadsCount}</span>
             </div>
             <div className="bg-white p-3 md:p-4 rounded-xl border border-zinc-200 shadow-sm flex flex-col items-center justify-center min-w-[100px]">
-              <span className="text-zinc-500 text-[11px] md:text-xs font-semibold uppercase tracking-wider mb-1">Ativos</span>
+              <span className="text-zinc-500 text-[11px] md:text-xs font-semibold uppercase tracking-wider mb-1">{t('db.active')}</span>
               <span className="text-xl md:text-2xl font-bold text-sky-600">{activeCount}</span>
             </div>
           </div>
@@ -163,8 +159,8 @@ export default function LeadsPage() {
         <div className="flex flex-col gap-3 pb-2 border-b border-zinc-200">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex flex-wrap items-center gap-1.5">
-              {['Todos', ...kanbanColumns].map(stage => {
-                const count = stage === 'Todos' ? searchedLeads.length : searchedLeads.filter(l => getKanbanStage(l.ETAPA) === stage).length;
+              {[(language === 'en' ? 'All' : 'Todos'), ...kanbanColumns].map(stage => {
+                const count = (stage === 'Todos' || stage === 'All') ? searchedLeads.length : searchedLeads.filter(l => getKanbanStage(l.ETAPA) === stage).length;
                 return (
                 <button
                   key={stage}
@@ -173,9 +169,9 @@ export default function LeadsPage() {
                     statusFilter === stage 
                       ? 'bg-zinc-900 text-white shadow-md scale-105'
                       : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300'
-                  } ${stage === 'Novo' && statusFilter !== 'Novo' ? 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : ''}`}
+                  } ${(stage === 'Novo' || stage === 'New') && statusFilter !== stage ? 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : ''}`}
                 >
-                  {stage === 'Novo' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>}
+                  {(stage === 'Novo' || stage === 'New') && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>}
                   {stage} <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === stage ? 'bg-white/20 text-white' : 'bg-zinc-100 text-zinc-500'}`}>{count}</span>
                 </button>
               )})}
@@ -186,7 +182,7 @@ export default function LeadsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
                 <input 
                   type="text" 
-                  placeholder="Buscar lead..."
+                  placeholder={t('leads.search')}
                   value={filterQuery}
                   onChange={(e) => setFilterQuery(e.target.value)}
                   className="pl-9 pr-4 py-2 w-full md:w-64 bg-white border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-sky-500/20 transition-all placeholder:text-zinc-400"

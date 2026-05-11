@@ -3,6 +3,7 @@
 import { useLead } from '@/context/LeadContext';
 import { useQuote } from '@/context/QuoteContext';
 import { useSettings } from '@/context/SettingsContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { notFound, useRouter } from 'next/navigation';
 import { User, Mail, Phone, MapPin, Calendar, Edit3, MessageCircle, FileText, ArrowLeft, Loader2, Save, X, DollarSign, Printer, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
@@ -15,6 +16,7 @@ export function LeadDetailClient({ id }: { id: string }) {
   const { leads, updateLead } = useLead();
   const { savedQuotes } = useQuote();
   const { settings } = useSettings();
+  const { language, t, translateStage } = useLanguage();
   const router = useRouter();
   const lead = leads.find(l => l.id === id);
 
@@ -40,6 +42,48 @@ export function LeadDetailClient({ id }: { id: string }) {
   }
 
   const leadQuotes = savedQuotes.filter(q => q.leadId === id);
+
+  // Quick Messages Logic
+  const getMessages = () => {
+    const firstName = lead.Nome?.split(' ')[0] || '';
+    const q = leadQuotes[0];
+    
+    if (language === 'en') {
+      let quoteText = '';
+      if (q) {
+        quoteText = ` based on the details of your home, it would be around $${q.total} for a ${q.serviceType} cleaning. `;
+      } else if (lead.Inicial) {
+        quoteText = ` your initial estimate is around $${lead.Inicial}${lead.Final ? ' to $' + lead.Final : ''}. `;
+      } else {
+        quoteText = ` I've prepared a special quote for you. `;
+      }
+
+      return {
+        contact: `Hi ${firstName}, this is Star Cleaning! We received your quote request. Do you have a quick minute to chat?`,
+        quote: `Hi ${firstName}, this is Star Cleaning again.${quoteText}What do you think? Can we get you scheduled?`,
+        followup: `Hi ${firstName}, just checking in to see if you had a chance to look over our proposal. Let me know if you have any questions!`
+      };
+    } else {
+      let quoteText = '';
+      if (q) {
+        const type = q.serviceType.toLowerCase().includes('deep') ? 'pesada (deep clean)' : 
+                     q.serviceType.toLowerCase().includes('move') ? 'de mudança (move-in/out)' : 'padrão';
+        quoteText = ` baseado nos detalhes da sua casa, ficaria em torno de $${q.total} para uma limpeza ${type}. `;
+      } else if (lead.Inicial) {
+        quoteText = ` seu orçamento inicial aproximado é de $${lead.Inicial}${lead.Final ? ' a $' + lead.Final : ''}. `;
+      } else {
+        quoteText = ` preparei um orçamento especial para você. `;
+      }
+
+      return {
+        contact: `Oi ${firstName}, aqui é da Star Cleaning! Recebemos seu pedido de orçamento. Você tem um minutinho para conversarmos?`,
+        quote: `Oi ${firstName}, aqui é da Star Cleaning de novo.${quoteText}O que você achou? Podemos agendar para você?`,
+        followup: `Oi ${firstName}, só passando para ver se você conseguiu dar uma olhada na nossa proposta. Qualquer dúvida, estou por aqui!`
+      };
+    }
+  };
+
+  const messages = getMessages();
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -77,9 +121,9 @@ export function LeadDetailClient({ id }: { id: string }) {
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">{lead.Nome || 'Unnamed Lead'}</h1>
+              <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">{lead.Nome || (t('language') === 'en' ? 'Unnamed Lead' : 'Lead sem nome')}</h1>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${getStatusColor(lead.ETAPA)}`}>
-                {lead.ETAPA || 'NOVA'}
+                {translateStage(lead.ETAPA || 'NOVA')}
               </span>
             </div>
             <p className="text-sm text-zinc-500 mt-1 flex items-center gap-1.5">
@@ -353,64 +397,51 @@ export function LeadDetailClient({ id }: { id: string }) {
           <div className="bg-emerald-900/10 border border-emerald-900/20 text-zinc-900 rounded-2xl shadow-sm overflow-hidden mt-6">
             <div className="p-6 border-b border-emerald-900/10 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold mb-1 text-emerald-800">Quick Messages</h2>
-                <p className="text-sm text-emerald-700/80">Copy & paste to RingCentral/WhatsApp (English)</p>
+                <h2 className="text-lg font-bold mb-1 text-emerald-800">{t('ld.quick_msg')}</h2>
+                <p className="text-sm text-emerald-700/80">{t('ld.copy_paste')}</p>
               </div>
             </div>
             <div className="p-6 pt-4 space-y-3">
               <button 
                 onClick={() => {
-                  const msg = `Hi ${lead.Nome?.split(' ')[0] || ''}, this is Star Cleaning! We received your quote request. Do you have a quick minute to chat?`;
-                  navigator.clipboard.writeText(msg);
-                  alert('Message copied to clipboard!');
+                  navigator.clipboard.writeText(messages.contact);
+                  alert(t('ld.copied'));
                 }}
                 className="w-full text-left p-3 rounded-xl bg-white border border-emerald-100 hover:border-emerald-300 hover:shadow-sm transition-all group"
               >
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">1st Contact</span>
-                  <span className="text-[10px] text-zinc-400 group-hover:text-emerald-500 font-medium">Click to copy</span>
+                  <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">{t('ld.contact')}</span>
+                  <span className="text-[10px] text-zinc-400 group-hover:text-emerald-500 font-medium">{language === 'en' ? 'Click to copy' : 'Clique para copiar'}</span>
                 </div>
-                <p className="text-sm text-zinc-600 line-clamp-2">Hi {lead.Nome?.split(' ')[0] || ''}, this is Star Cleaning! We received your...</p>
+                <p className="text-sm text-zinc-600 line-clamp-2">{messages.contact}</p>
               </button>
 
               <button 
                 onClick={() => {
-                  const firstName = lead.Nome?.split(' ')[0] || '';
-                  let quoteText = '';
-                  if (leadQuotes && leadQuotes.length > 0) {
-                    const q = leadQuotes[0];
-                    quoteText = ` based on the details of your home, it would be around $${q.total} for a ${q.serviceType} cleaning. `;
-                  } else if (lead.Inicial) {
-                    quoteText = ` your initial estimate is around $${lead.Inicial}${lead.Final ? ' to $' + lead.Final : ''}. `;
-                  } else {
-                    quoteText = ` I've prepared a special quote for you. `;
-                  }
-                  const msg = `Hi ${firstName}, this is Star Cleaning again.${quoteText}What do you think? Can we get you scheduled?`;
-                  navigator.clipboard.writeText(msg);
-                  alert('Message copied to clipboard!');
+                  navigator.clipboard.writeText(messages.quote);
+                  alert(t('ld.copied'));
                 }}
                 className="w-full text-left p-3 rounded-xl bg-white border border-emerald-100 hover:border-emerald-300 hover:shadow-sm transition-all group"
               >
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Send Quote</span>
-                  <span className="text-[10px] text-zinc-400 group-hover:text-emerald-500 font-medium">Click to copy</span>
+                  <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">{t('ld.send_quote')}</span>
+                  <span className="text-[10px] text-zinc-400 group-hover:text-emerald-500 font-medium">{language === 'en' ? 'Click to copy' : 'Clique para copiar'}</span>
                 </div>
-                <p className="text-sm text-zinc-600 line-clamp-2">Hi {lead.Nome?.split(' ')[0] || ''}, this is Star Cleaning again. I've prepared...</p>
+                <p className="text-sm text-zinc-600 line-clamp-2">{messages.quote}</p>
               </button>
 
               <button 
                 onClick={() => {
-                  const msg = `Hi ${lead.Nome?.split(' ')[0] || ''}, just checking in to see if you had a chance to look over our proposal. Let me know if you have any questions!`;
-                  navigator.clipboard.writeText(msg);
-                  alert('Message copied to clipboard!');
+                  navigator.clipboard.writeText(messages.followup);
+                  alert(t('ld.copied'));
                 }}
                 className="w-full text-left p-3 rounded-xl bg-white border border-emerald-100 hover:border-emerald-300 hover:shadow-sm transition-all group"
               >
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Short Follow-up</span>
-                  <span className="text-[10px] text-zinc-400 group-hover:text-emerald-500 font-medium">Click to copy</span>
+                  <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">{t('ld.followup')}</span>
+                  <span className="text-[10px] text-zinc-400 group-hover:text-emerald-500 font-medium">{language === 'en' ? 'Click to copy' : 'Clique para copiar'}</span>
                 </div>
-                <p className="text-sm text-zinc-600 line-clamp-2">Hi {lead.Nome?.split(' ')[0] || ''}, just checking in to see if you had a chance...</p>
+                <p className="text-sm text-zinc-600 line-clamp-2">{messages.followup}</p>
               </button>
             </div>
           </div>
