@@ -5,7 +5,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { 
   Search, Calendar, User, DollarSign, 
   Trash2, FileText, Printer, ArrowRight,
-  Filter, X, MapPin, ChevronRight
+  Filter, X, MapPin, ChevronRight,
+  SortAsc, Clock
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
@@ -17,10 +18,11 @@ export default function QuoteHistoryPage() {
   const { t, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
+  const [sortOrder, setSortOrder] = useState<'date' | 'alpha'>('date');
 
-  // Filter quotes based on search and type
+  // Filter and sort quotes based on search, type and sort order
   const filteredQuotes = useMemo(() => {
-    return savedQuotes.filter(quote => {
+    let result = savedQuotes.filter(quote => {
       const matchesSearch = 
         quote.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         quote.serviceType?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -29,8 +31,16 @@ export default function QuoteHistoryPage() {
       const matchesType = typeFilter === 'All' || quote.serviceType === typeFilter;
       
       return matchesSearch && matchesType;
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [savedQuotes, searchQuery, typeFilter]);
+    });
+
+    if (sortOrder === 'date') {
+      result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    } else {
+      result.sort((a, b) => (a.customerName || '').localeCompare(b.customerName || ''));
+    }
+
+    return result;
+  }, [savedQuotes, searchQuery, typeFilter, sortOrder]);
 
   // Unique service types for filtering
   const serviceTypes = useMemo(() => {
@@ -94,6 +104,17 @@ export default function QuoteHistoryPage() {
           </div>
           
           <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+            <div className="h-8 w-px bg-zinc-200 hidden md:block mx-1" />
+            <button
+              onClick={() => setSortOrder(sortOrder === 'date' ? 'alpha' : 'date')}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300"
+            >
+              {sortOrder === 'date' ? <Clock size={14} /> : <SortAsc size={14} />}
+              {sortOrder === 'date' 
+                ? (language === 'en' ? 'Date' : 'Data') 
+                : (language === 'en' ? 'A-Z' : 'A-Z')}
+            </button>
+            <div className="h-8 w-px bg-zinc-200 hidden md:block mx-1" />
             {serviceTypes.map(type => (
               <button
                 key={type || 'unknown'}
