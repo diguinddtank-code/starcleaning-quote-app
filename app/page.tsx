@@ -193,7 +193,7 @@ export default function DashboardPage() {
                     <div>
                       <div className="flex justify-between items-start mb-2">
                         <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded ${isOverdue ? 'bg-rose-100 text-rose-700' : isToday ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                          {isOverdue ? (t('language') === 'en' ? 'Overdue' : 'Atrasado') : isToday ? (t('language') === 'en' ? 'Today' : 'Hoje') : (t('language') === 'en' ? 'Tomorrow' : 'Amanhã')}
+                          {isOverdue ? (language === 'en' ? 'Overdue' : 'Atrasado') : isToday ? (language === 'en' ? 'Today' : 'Hoje') : (language === 'en' ? 'Tomorrow' : 'Amanhã')}
                         </span>
                         <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
                           <Calendar size={12} /> {timeString}
@@ -203,7 +203,7 @@ export default function DashboardPage() {
                       <p className="text-xs text-zinc-500 line-clamp-2 mt-1 mb-3">{lead.FOLLOWUP || 'Sem detalhes'}</p>
                     </div>
                     <div className="text-emerald-600 font-semibold text-xs flex items-center group-hover:underline mt-auto">
-                      {t('language') === 'en' ? 'Open Lead' : 'Abrir Lead'} <ArrowRight size={12} className="ml-1" />
+                      {language === 'en' ? 'Open Lead' : 'Abrir Lead'} <ArrowRight size={12} className="ml-1" />
                     </div>
                   </Link>
                 );
@@ -235,18 +235,18 @@ export default function DashboardPage() {
                   <Link href={`/leads/${lead.id}`} key={lead.id} className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-sky-100 group">
                     <div className="flex justify-between items-start mb-2">
                       <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded ${isNew ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                        {isNew ? (t('language') === 'en' ? 'New Lead' : 'Lead Novo') : (t('language') === 'en' ? 'Follow up' : 'Acompanhar')}
+                        {isNew ? (language === 'en' ? 'New Lead' : 'Lead Novo') : (language === 'en' ? 'Follow up' : 'Acompanhar')}
                       </span>
                       {days !== Infinity && !isNew && (
                         <span className="text-xs font-semibold text-rose-500">
-                          {days === 0 ? (t('language') === 'en' ? 'Today' : 'Hoje') : (t('language') === 'en' ? `${days} days quiet` : `${days} dias quieto`)}
+                          {days === 0 ? (language === 'en' ? 'Today' : 'Hoje') : (language === 'en' ? `${days} days quiet` : `${days} dias quieto`)}
                         </span>
                       )}
                     </div>
                     <p className="font-bold text-zinc-900 group-hover:text-sky-700 truncate">{lead.Nome || 'Cliente sem nome'}</p>
                     <p className="text-xs text-zinc-500 truncate mb-3">{lead.Telefone || lead.Email || 'Sem contato'}</p>
                     <div className="text-sky-600 font-semibold text-xs flex items-center group-hover:underline">
-                      {t('language') === 'en' ? 'View details' : 'Ver detalhes'} <ArrowRight size={12} className="ml-1" />
+                      {language === 'en' ? 'View details' : 'Ver detalhes'} <ArrowRight size={12} className="ml-1" />
                     </div>
                   </Link>
                 );
@@ -307,7 +307,7 @@ export default function DashboardPage() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center space-y-3 py-10 border-2 border-dashed border-zinc-100 rounded-xl">
               <Users className="text-zinc-300" size={32} />
-              <p className="text-sm text-zinc-500">{t('language') === 'en' ? 'No leads available yet.' : 'Nenhum lead disponível ainda.'}</p>
+              <p className="text-sm text-zinc-500">{language === 'en' ? 'No leads available yet.' : 'Nenhum lead disponível ainda.'}</p>
             </div>
           )}
         </motion.div>
@@ -320,7 +320,7 @@ export default function DashboardPage() {
               <Calculator className="text-zinc-400" size={20} /> {t('db.recent_quotes')}
             </h2>
             <Link href="/history" className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 group">
-              {t('language') === 'en' ? 'View History' : 'Ver Histórico'} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              {language === 'en' ? 'View History' : 'Ver Histórico'} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
           
@@ -362,9 +362,9 @@ export default function DashboardPage() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center space-y-3 py-10 border-2 border-dashed border-zinc-100 rounded-xl">
               <FileText className="text-zinc-300" size={32} />
-              <p className="text-sm text-zinc-500">{t('language') === 'en' ? 'No quotes generated yet.' : 'Nenhum orçamento gerado ainda.'}</p>
+              <p className="text-sm text-zinc-500">{language === 'en' ? 'No quotes generated yet.' : 'Nenhum orçamento gerado ainda.'}</p>
               <Link href="/estimate" className="mt-2 text-sm text-sky-600 hover:underline">
-                {t('language') === 'en' ? 'Create first' : 'Criar o primeiro'}
+                {language === 'en' ? 'Create first' : 'Criar o primeiro'}
               </Link>
             </div>
           )}

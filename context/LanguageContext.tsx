@@ -16,7 +16,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Nav
     'nav.dashboard': 'Dashboard',
     'nav.leads': 'Leads',
-    'nav.quotes': 'Quotes',
+    'nav.quotes': 'Quote History',
     'nav.settings': 'Settings',
     'nav.estimate': 'New Estimate',
     
@@ -48,6 +48,12 @@ const translations: Record<Language, Record<string, string>> = {
     'leads.status': 'Status',
     'leads.date': 'Date',
     'leads.manage_all': 'Manage all your contacts and quotes in one place.',
+
+    // History
+    'history.title': 'Quote History',
+    'history.subtitle': 'Review and filter all estimates generated for your clients.',
+    'history.search': 'Search by customer or details...',
+    'history.empty': 'No estimates found.',
     
     // Stages
     'stage.novo': 'New',
@@ -82,7 +88,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Nav
     'nav.dashboard': 'Painel',
     'nav.leads': 'Leads',
-    'nav.quotes': 'Orçamentos',
+    'nav.quotes': 'Histórico',
     'nav.settings': 'Configurações',
     'nav.estimate': 'Novo Orçamento',
     
@@ -114,6 +120,12 @@ const translations: Record<Language, Record<string, string>> = {
     'leads.status': 'Etapa',
     'leads.date': 'Data',
     'leads.manage_all': 'Gerencie todos os seus contatos e orçamentos em um lugar.',
+
+    // History
+    'history.title': 'Histórico de Orçamentos',
+    'history.subtitle': 'Revise e filtre todos os orçamentos gerados para seus clientes.',
+    'history.search': 'Buscar por cliente ou detalhes...',
+    'history.empty': 'Nenhum orçamento encontrado.',
     
     // Stages
     'stage.novo': 'Novo',
