@@ -38,11 +38,8 @@ function CalculatorContent() {
     if (leadId) {
       const lead = leads.find(l => l.id === leadId);
       if (lead) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCustomerName(lead.Nome || '');
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCustomerPhone(lead.Telefone || '');
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCustomerEmail(lead.Email || '');
         const updates: Record<string, number> = {};
         if (lead.Quartos) updates.beds = parseInt(lead.Quartos) || quote.beds;
@@ -50,6 +47,7 @@ function CalculatorContent() {
         if (Object.keys(updates).length > 0) updateQuote(updates);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leadId, leads]);
 
   // Calculate base residential total for recurring pricing

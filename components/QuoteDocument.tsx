@@ -42,6 +42,12 @@ export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
 
   const extrasTotal = quote.selectedExtras.reduce((sum, extra) => sum + settings.extras[extra as keyof typeof settings.extras], 0);
   
+  // Calculate standard total for recurring preview exactly like estimate/page.tsx
+  const standardTotalForPreview = settings.basePrice + areaPrice + roomsPrice;
+  const weeklyPrice = Math.round(standardTotalForPreview * (settings.weeklyMultiplier || 0.8));
+  const biWeeklyPrice = Math.round(standardTotalForPreview * (settings.biWeeklyMultiplier || 0.85));
+  const monthlyPrice = Math.round(standardTotalForPreview * (settings.monthlyMultiplier || 0.9));
+
   return (
     <div className="bg-white p-6 sm:p-10 text-zinc-900 font-sans max-w-3xl mx-auto border border-zinc-200 shadow-sm print:shadow-none print:border-none print:p-0" id="quote-document">
       {/* Header */}
@@ -174,7 +180,32 @@ export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
       </div>
 
       {/* Totals */}
-      <div className="flex justify-end mb-8">
+      <div className={`flex flex-col sm:flex-row ${['residential', 'deep'].includes(quote.serviceType) ? 'justify-between' : 'justify-end'} items-start sm:items-end mb-8 gap-6`}>
+        {['residential', 'deep'].includes(quote.serviceType) && (
+          <div className="w-full sm:w-1/2">
+            <div className="p-4 bg-sky-50 rounded-xl border border-sky-100 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-1 opacity-10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sky-600"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+              </div>
+              <p className="text-[10px] font-bold text-sky-800 uppercase tracking-wider mb-2 relative z-10">Recurring Discounts</p>
+              <div className="space-y-1 relative z-10 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-sky-700 font-medium">Weekly ({Math.round((1 - (settings.weeklyMultiplier || 0.8)) * 100)}% off)</span>
+                  <span className="font-bold text-sky-900">${weeklyPrice} <span className="text-[10px] font-normal text-sky-600">/visit</span></span>
+                </div>
+                <div className="flex items-center justify-between border-t border-sky-200/50 pt-1 mt-1">
+                  <span className="text-sky-700 font-medium">Bi-weekly ({Math.round((1 - (settings.biWeeklyMultiplier || 0.85)) * 100)}% off)</span>
+                  <span className="font-bold text-sky-900">${biWeeklyPrice} <span className="text-[10px] font-normal text-sky-600">/visit</span></span>
+                </div>
+                <div className="flex items-center justify-between border-t border-sky-200/50 pt-1 mt-1">
+                  <span className="text-sky-700 font-medium">Every 4 Weeks ({Math.round((1 - (settings.monthlyMultiplier || 0.9)) * 100)}% off)</span>
+                  <span className="font-bold text-sky-900">${monthlyPrice} <span className="text-[10px] font-normal text-sky-600">/visit</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="w-full sm:w-80 bg-zinc-50 p-5 rounded-xl border border-zinc-200">
           <div className="flex justify-between items-center mb-3 text-sm">
             <span className="text-zinc-500">Subtotal</span>

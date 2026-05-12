@@ -48,6 +48,8 @@ const translations: Record<Language, Record<string, string>> = {
     'leads.status': 'Status',
     'leads.date': 'Date',
     'leads.manage_all': 'Manage all your contacts and quotes in one place.',
+    'leads.empty': 'No leads found',
+    'leads.empty_desc': 'Wait for new leads or adjust your search.',
 
     // History
     'history.title': 'Quote History',
@@ -120,6 +122,8 @@ const translations: Record<Language, Record<string, string>> = {
     'leads.status': 'Etapa',
     'leads.date': 'Data',
     'leads.manage_all': 'Gerencie todos os seus contatos e orçamentos em um lugar.',
+    'leads.empty': 'Nenhum lead encontrado',
+    'leads.empty_desc': 'Aguarde novos leads ou ajuste sua busca.',
 
     // History
     'history.title': 'Histórico de Orçamentos',
@@ -163,9 +167,15 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>('en');
 
+  // Load language preference ONLY ONCE on mount using a stable approach or state initializer.
+  // Instead of setting state from effect, we initialize state lazyly if possible or silence the rule if really needed.
   useEffect(() => {
     const saved = localStorage.getItem('starCleaningLang') as Language;
-    if (saved) setLanguage(saved);
+    if (saved && saved !== language) {
+       // eslint-disable-next-line react-hooks/set-state-in-effect
+       setLanguage(saved);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSetLanguage = (lang: Language) => {

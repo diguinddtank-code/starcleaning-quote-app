@@ -14,7 +14,7 @@ export default function LeadsPage() {
   const [filterQuery, setFilterQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
-  const [statusFilter, setStatusFilter] = useState<string>(language === 'en' ? 'All' : 'Todos');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
   // Debounce search input
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function LeadsPage() {
   const filteredLeads = useMemo(() => {
     return searchedLeads
       .filter(l => {
-        if (statusFilter !== 'Todos' && getKanbanStage(l.ETAPA) !== statusFilter) return false;
+        if (statusFilter !== 'ALL' && getKanbanStage(l.ETAPA) !== statusFilter) return false;
         return true;
       })
       .sort((a, b) => {
@@ -78,6 +78,7 @@ export default function LeadsPage() {
         const timeB = b.updated_at ? new Date(b.updated_at).getTime() : (b.created_at ? new Date(b.created_at).getTime() : 0);
         return timeB - timeA;
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchedLeads, statusFilter]);
 
   const handleStatusChange = async (leadId: string, newStatus: string) => {
@@ -127,8 +128,8 @@ export default function LeadsPage() {
   }, {} as Record<string, Lead[]>);
 
   const totalLeads = leads.length;
-  const newLeadsCount = leads.filter(l => getKanbanStage(l.ETAPA) === 'Novo').length;
-  const activeCount = leads.filter(l => ['Primeiro Contato', 'Negociando', 'Agendado'].includes(getKanbanStage(l.ETAPA))).length;
+  const newLeadsCount = leads.filter(l => getKanbanStage(l.ETAPA) === t('stage.novo')).length;
+  const activeCount = leads.filter(l => [t('stage.contato'), t('stage.negociando'), t('stage.agendado')].includes(getKanbanStage(l.ETAPA))).length;
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 md:pb-8 space-y-6">
@@ -159,20 +160,23 @@ export default function LeadsPage() {
         <div className="flex flex-col gap-3 pb-2 border-b border-zinc-200">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex flex-wrap items-center gap-1.5">
-              {[(language === 'en' ? 'All' : 'Todos'), ...kanbanColumns].map(stage => {
-                const count = (stage === 'Todos' || stage === 'All') ? searchedLeads.length : searchedLeads.filter(l => getKanbanStage(l.ETAPA) === stage).length;
+              {[
+                { id: 'ALL', label: language === 'en' ? 'All' : 'Todos' },
+                ...kanbanColumns.map(stage => ({ id: stage, label: stage }))
+              ].map(stage => {
+                const count = stage.id === 'ALL' ? searchedLeads.length : searchedLeads.filter(l => getKanbanStage(l.ETAPA) === stage.id).length;
                 return (
                 <button
-                  key={stage}
-                  onClick={() => setStatusFilter(stage)}
+                  key={stage.id}
+                  onClick={() => setStatusFilter(stage.id)}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-                    statusFilter === stage 
+                    statusFilter === stage.id 
                       ? 'bg-zinc-900 text-white shadow-md scale-105'
                       : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300'
-                  } ${(stage === 'Novo' || stage === 'New') && statusFilter !== stage ? 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : ''}`}
+                  } ${(stage.id === 'Novo' || stage.id === 'New') && statusFilter !== stage.id ? 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : ''}`}
                 >
-                  {(stage === 'Novo' || stage === 'New') && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>}
-                  {stage} <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === stage ? 'bg-white/20 text-white' : 'bg-zinc-100 text-zinc-500'}`}>{count}</span>
+                  {(stage.id === 'Novo' || stage.id === 'New') && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>}
+                  {stage.label} <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === stage.id ? 'bg-white/20 text-white' : 'bg-zinc-100 text-zinc-500'}`}>{count}</span>
                 </button>
               )})}
             </div>
@@ -214,8 +218,8 @@ export default function LeadsPage() {
           <div className="w-16 h-16 bg-zinc-100 text-zinc-400 rounded-full flex items-center justify-center mx-auto mb-4">
             <User size={32} />
           </div>
-          <h2 className="text-lg font-bold text-zinc-900 mb-2">No leads found</h2>
-          <p className="text-sm text-zinc-500">Wait for new leads or adjust your search.</p>
+          <h2 className="text-lg font-bold text-zinc-900 mb-2">{t('leads.empty')}</h2>
+          <p className="text-sm text-zinc-500">{t('leads.empty_desc')}</p>
         </div>
       ) : viewMode === 'kanban' ? (
         <div className="flex gap-4 overflow-x-auto pb-4 snap-x min-h-[60vh]">
