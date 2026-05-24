@@ -32,6 +32,7 @@ export default function LeadsPage() {
     t('stage.novo'), 
     t('stage.contato'), 
     t('stage.negociando'), 
+    t('stage.waiting_deposit'),
     t('stage.agendado'), 
     t('stage.nao_responde'), 
     t('stage.sem_interesse'), 
@@ -101,6 +102,7 @@ export default function LeadsPage() {
   const getStatusColor = (status?: string) => {
     const s = status?.toLowerCase() || '';
     if (s.includes('agendado')) return 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100';
+    if (s.includes('deposit') || s.includes('depósito') || s.includes('deposito')) return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
     if (s.includes('novo')) return 'bg-emerald-500 text-white border-emerald-600 shadow-sm shadow-emerald-500/30 hover:bg-emerald-600';
     if (s.includes('sem interesse') || s.includes('not interest') || s.includes('perdido')) return 'bg-zinc-100 text-zinc-600 border-zinc-200 hover:bg-zinc-200';
     if (s.includes('contato') || s.includes('stand') || s.includes('nego') || s.includes('responde')) return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
@@ -129,7 +131,7 @@ export default function LeadsPage() {
 
   const totalLeads = leads.length;
   const newLeadsCount = leads.filter(l => getKanbanStage(l.ETAPA) === t('stage.novo')).length;
-  const activeCount = leads.filter(l => [t('stage.contato'), t('stage.negociando'), t('stage.agendado')].includes(getKanbanStage(l.ETAPA))).length;
+  const activeCount = leads.filter(l => [t('stage.contato'), t('stage.negociando'), t('stage.waiting_deposit'), t('stage.agendado')].includes(getKanbanStage(l.ETAPA))).length;
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 md:pb-8 space-y-6">

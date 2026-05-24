@@ -325,7 +325,6 @@ function CalculatorContent() {
               <ExtraCard title="Inside Oven" price={settings.extras.oven} icon={<Box size={18} />} selected={quote.selectedExtras.includes('oven')} onClick={() => toggleExtra('oven')} />
               <ExtraCard title="Inside Fridge" price={settings.extras.fridge} icon={<Box size={18} />} selected={quote.selectedExtras.includes('fridge')} onClick={() => toggleExtra('fridge')} />
               <ExtraCard title="Interior Windows" price={settings.extras.windows} icon={<Wind size={18} />} selected={quote.selectedExtras.includes('windows')} onClick={() => toggleExtra('windows')} />
-              <ExtraCard title="Laundry (per load)" price={settings.extras.laundry} icon={<WashingMachine size={18} />} selected={quote.selectedExtras.includes('laundry')} onClick={() => toggleExtra('laundry')} />
               <ExtraCard title="Inside Cabinets" price={settings.extras.cabinets} icon={<Box size={18} />} selected={quote.selectedExtras.includes('cabinets')} onClick={() => toggleExtra('cabinets')} />
               <ExtraCard title="Garage Sweep" price={settings.extras.garage} icon={<CarFront size={18} />} selected={quote.selectedExtras.includes('garage')} onClick={() => toggleExtra('garage')} />
             </div>

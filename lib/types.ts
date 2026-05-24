@@ -19,7 +19,6 @@ export interface PricingSettings {
     oven: number;
     fridge: number;
     windows: number;
-    laundry: number;
     cabinets: number;
     garage: number;
     bedChange: number;

@@ -61,6 +61,7 @@ const translations: Record<Language, Record<string, string>> = {
     'stage.novo': 'New',
     'stage.contato': '1st Contact',
     'stage.negociando': 'Negotiating',
+    'stage.waiting_deposit': 'Waiting Deposit',
     'stage.agendado': 'Scheduled',
     'stage.nao_responde': 'No Response',
     'stage.sem_interesse': 'Not Interested',
@@ -135,6 +136,7 @@ const translations: Record<Language, Record<string, string>> = {
     'stage.novo': 'Novo',
     'stage.contato': '1º Contato',
     'stage.negociando': 'Negociando',
+    'stage.waiting_deposit': 'Aguard. Depósito',
     'stage.agendado': 'Agendado',
     'stage.nao_responde': 'Não Responde',
     'stage.sem_interesse': 'Sem Interesse',
@@ -190,6 +192,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const translateStage = (stage: string) => {
     const s = stage.toLowerCase();
     if (s.includes('agendado') || s.includes('scheduled')) return t('stage.agendado');
+    if (s.includes('deposit') || s.includes('depósito') || s.includes('deposito')) return t('stage.waiting_deposit');
     if (s.includes('contato') || s.includes('contact')) return t('stage.contato');
     if (s.includes('negociando') || s.includes('negotiating')) return t('stage.negociando');
     if (s.includes('não responde') || s.includes('nao responde') || s.includes('no response')) return t('stage.nao_responde');

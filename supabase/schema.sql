@@ -83,7 +83,7 @@ VALUES (
   2.0, 2.5,
   1.2, 1.0, 2.5,
   0.7, 0.8, 0.9,
-  '{"oven": 40, "fridge": 60, "windows": 85, "laundry": 20, "cabinets": 100, "garage": 50}'::jsonb
+  '{"oven": 40, "fridge": 60, "windows": 85, "cabinets": 100, "garage": 50}'::jsonb
 ) ON CONFLICT (id) DO NOTHING;
 
 -- Enable Realtime for both tables

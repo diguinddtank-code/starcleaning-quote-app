@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS public.settings (
     vacation_multiplier numeric NOT NULL DEFAULT 1.2,
     commercial_multiplier numeric NOT NULL DEFAULT 1.0,
     construction_multiplier numeric NOT NULL DEFAULT 2.5,
-    extras jsonb NOT NULL DEFAULT '{"oven": 35, "fridge": 35, "windows": 5, "laundry": 20, "cabinets": 25, "garage": 40}'::jsonb
+    extras jsonb NOT NULL DEFAULT '{"oven": 35, "fridge": 35, "windows": 5, "cabinets": 25, "garage": 40}'::jsonb
 );
 
 -- Insert default settings row if it doesn't exist
