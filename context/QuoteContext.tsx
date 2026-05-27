@@ -33,7 +33,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
   const [quote, setQuote] = useState<QuoteState>(defaultQuote);
   const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([]);
   const { settings } = useSettings();
-  const { leads, updateLead } = useLead();
+  const { leads, updateLead, addLead } = useLead();
 
   useEffect(() => {
     let subscription: any = null;
@@ -195,14 +195,14 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
 
       if (leadId) {
         // We attach this estimate details to an existing lead by updating ETAPA and Prices
-        await supabase.from('leads').update({
+        await updateLead(leadId, {
           Inicial: `$${totalPrice}`,
           OBSERVACOES: `Estimated ${quote.serviceType} / ${quote.sqFt}sqft. Total: $${totalPrice}`,
           ETAPA: 'cotado'
-        }).eq('id', leadId);
+        });
       } else {
         // Create a new Lead
-        const { data: newLead } = await supabase.from('leads').insert({
+        const newLead = await addLead({
           Nome: customerName,
           Telefone: customerPhone,
           Email: customerEmail,
@@ -213,11 +213,13 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
           Inicial: `$${totalPrice}`,
           ETAPA: 'novo',
           created_by_email: userEmail
-        }).select().single();
+        } as any);
         if (newLead) {
           finalLeadId = newLead.id;
         }
       }
+
+      newQuote.leadId = finalLeadId;
 
       // Insert Quote
       await supabase.from('quotes').insert({
@@ -238,6 +240,13 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
         status: 'new'
       });
     }
+
+    // Optimistically push the new quote to the local estimates list
+    setSavedQuotes((prev) => {
+      const exists = prev.some(q => q.id === qid);
+      if (exists) return prev;
+      return [newQuote, ...prev];
+    });
     
     return newQuote;
   };

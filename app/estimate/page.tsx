@@ -15,11 +15,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLead } from '@/context/LeadContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 function CalculatorContent() {
   const { quote, updateQuote, totalPrice, saveQuoteToLead, resetQuote } = useQuote();
   const { settings } = useSettings();
   const { leads } = useLead();
+  const { language, t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [leadId, setLeadId] = useState<string | undefined>(searchParams?.get('leadId') || undefined);
@@ -556,15 +558,17 @@ function CalculatorContent() {
                 {isGenerating ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating Estimate...
+                    {language === 'pt' ? 'Gerando Proposta...' : 'Generating Estimate...'}
                   </>
                 ) : showSuccessToast ? (
                   <>
                     <CheckCircle2 className="w-4 h-4" />
-                    Estimate Generated!
+                    {language === 'pt' ? 'Proposta Gerada!' : 'Estimate Generated!'}
                   </>
                 ) : (
-                  'Save Lead to Database'
+                  leadId 
+                    ? (language === 'pt' ? 'Salvar Proposta no Lead' : 'Save Proposal to Lead')
+                    : (language === 'pt' ? 'Criar Lead e Salvar Proposta' : 'Save Lead & Proposal')
                 )}
               </button>
 
