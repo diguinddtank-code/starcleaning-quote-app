@@ -222,7 +222,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
       newQuote.leadId = finalLeadId;
 
       // Insert Quote
-      await supabase.from('quotes').insert({
+      const fullQuoteData = {
         id: qid,
         lead_id: finalLeadId,
         customer_name: customerName,
@@ -238,7 +238,36 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
         frequency: quote.frequency,
         total: totalPrice,
         status: 'new'
-      });
+      };
+
+      const { error: insertError } = await supabase.from('quotes').insert(fullQuoteData);
+      
+      if (insertError) {
+        console.warn('First insert attempt failed (likely due to missing selected_extras column). Retrying with essential schema columns.', insertError);
+        const essentialQuoteData = {
+          id: qid,
+          lead_id: finalLeadId,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          customer_email: customerEmail,
+          sq_ft: quote.sqFt,
+          beds: quote.beds,
+          baths: quote.baths,
+          half_baths: quote.halfBaths,
+          service_type: quote.serviceType,
+          frequency: quote.frequency,
+          total: totalPrice,
+          status: 'new'
+        };
+        const { error: retryError } = await supabase.from('quotes').insert(essentialQuoteData);
+        if (retryError) {
+          console.error('Failed both insert attempts in Supabase quotes table:', retryError);
+        } else {
+          console.log('Successfully saved quote to Supabase using essential schema columns.');
+        }
+      } else {
+        console.log('Successfully saved quote to Supabase with full schema columns.');
+      }
     }
 
     // Optimistically push the new quote to the local estimates list

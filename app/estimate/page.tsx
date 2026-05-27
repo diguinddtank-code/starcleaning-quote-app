@@ -691,10 +691,17 @@ function CalculatorContent() {
               <p className="text-xs text-zinc-400">Synchronized with leads.</p>
             </div>
             <button 
-              onClick={() => router.push('/leads')}
+              onClick={() => {
+                const targetLeadId = savedEstimate?.leadId || leadId;
+                if (targetLeadId) {
+                  router.push(`/leads/${targetLeadId}`);
+                } else {
+                  router.push('/leads');
+                }
+              }}
               className="ml-auto md:ml-4 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs font-medium rounded-lg transition-colors whitespace-nowrap"
             >
-              View in Leads
+              {language === 'pt' ? 'Ver no Lead' : 'View in Lead'}
             </button>
           </motion.div>
         )}
@@ -744,17 +751,18 @@ function CalculatorContent() {
                   </button>
                   <button 
                     onClick={() => {
+                      const targetLeadId = savedEstimate?.leadId || leadId;
                       setShowSummary(false);
                       resetQuote();
-                      if (leadId) {
-                        router.push(`/leads/${leadId}`);
+                      if (targetLeadId) {
+                        router.push(`/leads/${targetLeadId}`);
                       } else {
                         router.push('/leads');
                       }
                     }} 
                     className="flex-1 sm:flex-none justify-center px-4 py-2.5 bg-sky-100 hover:bg-sky-200 text-sky-700 text-sm font-bold rounded-lg transition-colors shadow-sm"
                   >
-                    View in Leads
+                    {language === 'pt' ? 'Ver no Lead' : 'View in Lead'}
                   </button>
                   <button 
                     onClick={() => {

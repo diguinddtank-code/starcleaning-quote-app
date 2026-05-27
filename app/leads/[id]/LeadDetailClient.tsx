@@ -849,7 +849,7 @@ export function LeadDetailClient({ id }: { id: string }) {
             <div className="bg-white rounded-3xl border border-zinc-200 overflow-hidden shadow-sm animate-fadeIn">
               <div className="p-5 border-b border-zinc-200 bg-zinc-50/50 flex justify-between items-center">
                 <h3 className="text-xs font-bold tracking-widest text-zinc-400 uppercase flex items-center gap-2">
-                  <FileText size={14} className="text-sky-500" /> Cotações Enviadas
+                  <FileText size={14} className="text-sky-500" /> {language === 'en' ? 'Generated Estimates' : 'Cotações Feitas'}
                 </h3>
                 <Link 
                   href={`/estimate?leadId=${lead.id}`} 

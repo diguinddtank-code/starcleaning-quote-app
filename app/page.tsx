@@ -20,28 +20,6 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { language, t, translateStage } = useLanguage();
 
-  // User Local Session Traversal History
-  const [visitedLeads, setVisitedLeads] = useState<any[]>([]);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('commercial_recent_leads');
-      if (stored) {
-        const parsedIds: string[] = JSON.parse(stored);
-        if (Array.isArray(parsedIds)) {
-          // Map stored IDs back to active database leads (maintaining chronological order)
-          const matchedLeads = parsedIds
-            .map(id => leads.find(l => l.id === id))
-            .filter((l): l is NonNullable<typeof l> => !!l);
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setVisitedLeads(matchedLeads);
-        }
-      }
-    } catch (e) {
-      console.error('Error reading visit session log', e);
-    }
-  }, [leads]);
-  
   // Metrics
   const totalLeads = leads.length;
   const newLeadsCount = leads.filter(l => translateStage(l.ETAPA || '').toLowerCase() === translateStage('New Lead').toLowerCase()).length;
@@ -219,74 +197,7 @@ export default function DashboardPage() {
         </motion.div>
       </motion.div>
 
-      {/* Session Navigation History Logs */}
-      {visitedLeads.length > 0 && (
-        <motion.div 
-          variants={itemVariants}
-          className="bg-zinc-950 text-white rounded-2xl p-6 border border-zinc-800 shadow-xl relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 p-4 opacity-[0.02] pointer-events-none">
-            <Users size={160} />
-          </div>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                </span>
-                <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400">
-                  {language === 'en' ? 'Active Sales Cockpit' : 'Últimos Leads que você mexeu'}
-                </h2>
-              </div>
-              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
-                {language === 'en' ? 'Quick Access Log' : 'Seu Histórico de Navegação'}
-              </span>
-            </div>
-            <p className="text-xs text-zinc-400 mb-5 max-w-2xl font-medium">
-              {language === 'en' 
-                ? 'These are the last leads you worked on in this browser session. Hover and click to instantly jump back into your consultative script.' 
-                : 'Estes foram os últimos leads visualizados ou editados no seu CRM neste navegador. Clique para retornar ao atendimento instantaneamente.'}
-            </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {visitedLeads.slice(0, 4).map(lead => (
-                <Link 
-                  href={`/leads/${lead.id}`} 
-                  key={lead.id} 
-                  className="bg-zinc-900 hover:bg-zinc-850 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all group flex flex-col justify-between cursor-pointer relative"
-                >
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className={`text-[8px] uppercase font-black px-2 py-0.5 rounded tracking-wide ${
-                        lead.ETAPA?.toLowerCase().includes('novo') ? 'bg-emerald-950 text-emerald-400 border border-emerald-900/40' : 
-                        lead.ETAPA?.toLowerCase().includes('agendado') ? 'bg-sky-950 text-sky-400 border border-sky-900/40' :
-                        lead.ETAPA?.toLowerCase().includes('negociando') ? 'bg-amber-950 text-amber-400 border border-amber-900/40' :
-                        'bg-zinc-800 text-zinc-300'
-                      }`}>
-                        {translateStage(lead.ETAPA || 'Novo')}
-                      </span>
-                      <span className="text-[9px] font-semibold text-zinc-500 font-mono">
-                        {lead.Quartos || '0'}Q / {lead.Banheiros || '0'}B
-                      </span>
-                    </div>
-                    <p className="font-extrabold text-sm text-zinc-100 group-hover:text-amber-400 transition-colors truncate">
-                      {lead.Nome || 'Cliente sem nome'}
-                    </p>
-                    <p className="text-[10px] text-zinc-400 truncate">
-                      {lead.Cidade || 'Sem cidade definida'}
-                    </p>
-                  </div>
-                  <div className="text-zinc-500 group-hover:text-amber-400 font-bold text-[10px] uppercase tracking-wider flex items-center mt-4 gap-1 transition-colors">
-                    {language === 'en' ? 'Resume Script' : 'Voltar ao Lead'} 
-                    <ArrowRight size={10} className="transform group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-      )}
 
       {/* Reminders Widget */}
       {reminders.length > 0 && (

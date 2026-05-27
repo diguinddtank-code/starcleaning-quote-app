@@ -77,29 +77,46 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
 
     if (hasSupabase && supabase) {
       try {
-        const { data, error } = await supabase
+        const initialInsertData: any = {
+          Nome: leadData.Nome,
+          Email: leadData.Email,
+          Telefone: leadData.Telefone,
+          Cidade: leadData.Cidade,
+          ZIP: leadData.ZIP,
+          Quartos: leadData.Quartos,
+          Banheiros: leadData.Banheiros,
+          Service: leadData.Service,
+          Frequencia: leadData.Frequencia,
+          Inicial: leadData.Inicial,
+          Final: leadData.Final,
+          ETAPA: leadData.ETAPA || 'New Lead',
+          ...(leadData.ETAPA && (leadData.ETAPA.toLowerCase() === 'closing' || leadData.ETAPA.toLowerCase() === 'fechado') ? { converted_at: new Date().toISOString() } : {}),
+          OBSERVACOES: leadData.OBSERVACOES,
+          FOLLOWUP: leadData.FOLLOWUP,
+          UMSG: leadData.UMSG,
+          REMINDER_DATE: leadData.REMINDER_DATE
+        };
+
+        let { data, error } = await supabase
           .from('leads')
-          .insert({
-            Nome: leadData.Nome,
-            Email: leadData.Email,
-            Telefone: leadData.Telefone,
-            Cidade: leadData.Cidade,
-            ZIP: leadData.ZIP,
-            Quartos: leadData.Quartos,
-            Banheiros: leadData.Banheiros,
-            Service: leadData.Service,
-            Frequencia: leadData.Frequencia,
-            Inicial: leadData.Inicial,
-            Final: leadData.Final,
-            ETAPA: leadData.ETAPA || 'New Lead',
-            ...(leadData.ETAPA && (leadData.ETAPA.toLowerCase() === 'closing' || leadData.ETAPA.toLowerCase() === 'fechado') ? { converted_at: new Date().toISOString() } : {}),
-            OBSERVACOES: leadData.OBSERVACOES,
-            FOLLOWUP: leadData.FOLLOWUP,
-            UMSG: leadData.UMSG,
-            REMINDER_DATE: leadData.REMINDER_DATE
-          })
+          .insert(initialInsertData)
           .select()
           .single();
+
+        if (error) {
+          console.warn('Initial insert on leads failed (could be missing REMINDER_DATE), retrying without REMINDER_DATE Column...', error);
+          const fallbackInsertData = { ...initialInsertData };
+          delete fallbackInsertData.REMINDER_DATE;
+          
+          const retryResult = await supabase
+            .from('leads')
+            .insert(fallbackInsertData)
+            .select()
+            .single();
+            
+          data = retryResult.data;
+          error = retryResult.error;
+        }
 
         if (error) throw error;
         
@@ -130,11 +147,20 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
 
     if (hasSupabase && supabase) {
       try {
-        const { error } = await supabase.from('leads').update(finalUpdates).eq('id', id);
-        if (error) throw error;
+        const payloadToSend: any = { ...finalUpdates };
+        delete payloadToSend.updated_at; // database has created_at, might not have updated_at
+
+        let { error } = await supabase.from('leads').update(payloadToSend).eq('id', id);
+        
+        if (error) {
+          console.warn('Initial update failed, retrying with safer subset (no REMINDER_DATE or updated_at)', error);
+          const fallbackUpdates: any = { ...payloadToSend };
+          delete fallbackUpdates.REMINDER_DATE;
+          const { error: retryError } = await supabase.from('leads').update(fallbackUpdates).eq('id', id);
+          if (retryError) throw retryError;
+        }
       } catch (e) {
         console.error('Failed to update lead in Supabase', e);
-        // Revert on failure by reloading? For simplicity we just log
       }
     }
   };
