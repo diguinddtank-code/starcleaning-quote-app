@@ -787,7 +787,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                     <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-3xs">
                       <h4 className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1.5 font-sans">Valor Estimado</h4>
                       <div className="text-lg font-black text-emerald-700 tracking-tight font-sans">
-                        ${lead.Inicial || '0'}
+                        {lead.Inicial ? (String(lead.Inicial).startsWith('$') ? lead.Inicial : `$${lead.Inicial}`) : '$0'}
                       </div>
                     </div>
                   </div>
