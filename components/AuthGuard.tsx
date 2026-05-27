@@ -3,9 +3,15 @@
 import { useAuth } from '@/context/AuthContext';
 import { LoginPage } from '@/components/LoginPage';
 import { Loader2 } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
+  const pathname = usePathname();
+
+  if (pathname === '/estimate/view') {
+    return <>{children}</>;
+  }
 
   if (isLoading) {
     return (

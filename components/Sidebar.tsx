@@ -13,6 +13,8 @@ export function Sidebar() {
   const { user, signOut } = useAuth();
   const { language, setLanguage, t } = useLanguage();
 
+  if (pathname === '/estimate/view') return null;
+
   const navItems = [
     { name: t('nav.dashboard'), href: '/', icon: LayoutDashboard },
     { name: 'KPIs', href: '/kpi', icon: BarChart2 },

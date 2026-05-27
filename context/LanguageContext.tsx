@@ -58,18 +58,17 @@ const translations: Record<Language, Record<string, string>> = {
     'history.empty': 'No estimates found.',
     
     // Stages
-    'stage.novo': 'New',
-    'stage.contato': '1st Contact',
-    'stage.negociando': 'Negotiating',
-    'stage.waiting_deposit': 'Waiting Deposit',
-    'stage.agendado': 'Scheduled',
-    'stage.nao_responde': 'No Response',
-    'stage.sem_interesse': 'Not Interested',
-    'stage.outros': 'Others',
+    'stage.novo': 'New Lead',
+    'stage.initial_contact': 'Initial Contact & Qualification',
+    'stage.discovery': 'Discovery',
+    'stage.solution_design': 'Solution Design',
+    'stage.pricing_presentation': 'Pricing & Estimate Presentation',
+    'stage.no_response': 'No Response',
+    'stage.closing': 'Closing',
     
     // Lead Detail
     'ld.quick_msg': 'Quick Messages',
-    'ld.copy_paste': 'Copy & paste to RingCentral/WhatsApp',
+    'ld.copy_paste': 'Copy & paste to RingCentral/Text Message',
     'ld.contact': '1st Contact',
     'ld.send_quote': 'Send Quote',
     'ld.followup': 'Short Follow-up',
@@ -133,18 +132,17 @@ const translations: Record<Language, Record<string, string>> = {
     'history.empty': 'Nenhum orçamento encontrado.',
     
     // Stages
-    'stage.novo': 'Novo',
-    'stage.contato': '1º Contato',
-    'stage.negociando': 'Negociando',
-    'stage.waiting_deposit': 'Aguard. Depósito',
-    'stage.agendado': 'Agendado',
-    'stage.nao_responde': 'Não Responde',
-    'stage.sem_interesse': 'Sem Interesse',
-    'stage.outros': 'Outros',
+    'stage.novo': 'New Lead',
+    'stage.initial_contact': 'Initial Contact & Qualification',
+    'stage.discovery': 'Discovery',
+    'stage.solution_design': 'Solution Design',
+    'stage.pricing_presentation': 'Pricing & Estimate Presentation',
+    'stage.no_response': 'No Response',
+    'stage.closing': 'Closing',
     
     // Lead Detail
     'ld.quick_msg': 'Mensagens Rápidas',
-    'ld.copy_paste': 'Copie e cole no RingCentral/WhatsApp',
+    'ld.copy_paste': 'Copie e cole no RingCentral/Text Message',
     'ld.contact': '1º Contato',
     'ld.send_quote': 'Enviar Orçamento',
     'ld.followup': 'Follow-up Curto',
@@ -191,14 +189,18 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const translateStage = (stage: string) => {
     const s = stage.toLowerCase();
-    if (s.includes('agendado') || s.includes('scheduled')) return t('stage.agendado');
-    if (s.includes('deposit') || s.includes('depósito') || s.includes('deposito')) return t('stage.waiting_deposit');
-    if (s.includes('contato') || s.includes('contact')) return t('stage.contato');
-    if (s.includes('negociando') || s.includes('negotiating')) return t('stage.negociando');
-    if (s.includes('não responde') || s.includes('nao responde') || s.includes('no response')) return t('stage.nao_responde');
-    if (s.includes('sem interesse') || s.includes('not interest')) return t('stage.sem_interesse');
-    if (s.includes('novo') || s.includes('new')) return t('stage.novo');
-    return t('stage.outros');
+    
+    if (s.includes('initial contact') || s.includes('qualification') || s.includes('initial') || s.includes('contato') || s.includes('contact')) return t('stage.initial_contact');
+    if (s.includes('discovery')) return t('stage.discovery');
+    if (s.includes('solution') || s.includes('design')) return t('stage.solution_design');
+    if (s.includes('pricing') || s.includes('presentation') || s.includes('estimate') || s.includes('quote') || s.includes('cotado')) return t('stage.pricing_presentation');
+    if (s.includes('não responde') || s.includes('nao responde') || s.includes('no response') || s.includes('no_response')) return t('stage.no_response');
+    if (s.includes('closing') || s.includes('closed') || s.includes('agendado') || s.includes('scheduled') || s.includes('deposit') || s.includes('depósito') || s.includes('deposito')) return t('stage.closing');
+    
+    // Legacy mapping fallback
+    if (s.includes('negociando') || s.includes('negotiating')) return t('stage.discovery');
+    
+    return t('stage.novo');
   };
 
   return (

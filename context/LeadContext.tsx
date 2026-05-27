@@ -8,6 +8,7 @@ interface LeadContextType {
   leads: Lead[];
   updateLead: (id: string, updates: Partial<Lead>) => Promise<void>;
   deleteLead: (id: string) => Promise<void>;
+  addLead: (lead: Omit<Lead, 'id' | 'created_at' | 'updated_at'>) => Promise<Lead | null>;
 }
 
 const LeadContext = createContext<LeadContextType | undefined>(undefined);
@@ -62,9 +63,69 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const addLead = async (leadData: Omit<Lead, 'id' | 'created_at' | 'updated_at'>) => {
+    const tempId = `temp-${Math.random()}`;
+    const newLeadObj: Lead = {
+      ...leadData,
+      id: tempId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Optimistic insert
+    setLeads((prev) => [newLeadObj, ...prev]);
+
+    if (hasSupabase && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('leads')
+          .insert({
+            Nome: leadData.Nome,
+            Email: leadData.Email,
+            Telefone: leadData.Telefone,
+            Cidade: leadData.Cidade,
+            ZIP: leadData.ZIP,
+            Quartos: leadData.Quartos,
+            Banheiros: leadData.Banheiros,
+            Service: leadData.Service,
+            Frequencia: leadData.Frequencia,
+            Inicial: leadData.Inicial,
+            Final: leadData.Final,
+            ETAPA: leadData.ETAPA || 'New Lead',
+            ...(leadData.ETAPA && (leadData.ETAPA.toLowerCase() === 'closing' || leadData.ETAPA.toLowerCase() === 'fechado') ? { converted_at: new Date().toISOString() } : {}),
+            OBSERVACOES: leadData.OBSERVACOES,
+            FOLLOWUP: leadData.FOLLOWUP,
+            UMSG: leadData.UMSG,
+            REMINDER_DATE: leadData.REMINDER_DATE
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        
+        // Replace temp lead with DB lead
+        setLeads((prev) => prev.map((l) => l.id === tempId ? (data as Lead) : l));
+        return data as Lead;
+      } catch (e) {
+        console.error('Failed to add lead in Supabase', e);
+        // Remove temp lead if failed
+        setLeads((prev) => prev.filter((l) => l.id !== tempId));
+        return null;
+      }
+    }
+    return newLeadObj;
+  };
+
   const updateLead = async (id: string, updates: Partial<Lead>) => {
     // Optimistic update
     const finalUpdates = { ...updates, updated_at: new Date().toISOString() };
+    
+    if ('ETAPA' in updates && updates.ETAPA !== undefined) {
+      if (updates.ETAPA.toLowerCase() === 'closing' || updates.ETAPA.toLowerCase() === 'fechado') {
+        finalUpdates.converted_at = new Date().toISOString();
+      }
+    }
+    
     setLeads((prev) => prev.map((l) => l.id === id ? { ...l, ...finalUpdates } : l));
 
     if (hasSupabase && supabase) {
@@ -93,7 +154,7 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <LeadContext.Provider value={{ leads, updateLead, deleteLead }}>
+    <LeadContext.Provider value={{ leads, updateLead, deleteLead, addLead }}>
       {children}
     </LeadContext.Provider>
   );

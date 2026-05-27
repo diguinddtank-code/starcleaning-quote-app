@@ -12,6 +12,8 @@ export function MobileNav() {
   const { signOut } = useAuth();
   const { t } = useLanguage();
 
+  if (pathname === '/estimate/view') return null;
+
   const navItems = [
     { name: t('nav.dashboard'), href: '/', icon: LayoutDashboard },
     { name: t('nav.estimate'), href: '/estimate', icon: Calculator },

@@ -63,7 +63,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
               frequency: q.frequency as any,
               total: q.total,
               status: q.status,
-              selectedExtras: [] // If you want to support extras, add them to schema
+              selectedExtras: q.selected_extras || []
             }));
             setSavedQuotes(mapped);
           }
@@ -99,27 +99,69 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
   };
 
   const calculateTotal = () => {
+    const sqFt = quote.sqFt;
+    let tier = settings.pricingTiers?.find(t => sqFt >= t.minSqft && sqFt <= t.maxSqft);
+    if (!tier && settings.pricingTiers && settings.pricingTiers.length > 0) {
+      tier = settings.pricingTiers.reduce((prev, curr) => 
+        Math.abs(curr.maxSqft - sqFt) < Math.abs(prev.maxSqft - sqFt) ? curr : prev
+      );
+    }
+
     let total = settings.basePrice;
-    total += quote.sqFt * settings.pricePerSqFt;
-    total += quote.beds * settings.bedPrice;
-    total += quote.baths * settings.bathPrice;
-    total += quote.halfBaths * settings.halfBathPrice;
+    
+    if (tier) {
+      // Find best match in details by beds
+      const matches = [...tier.details].sort((a,b) => a.beds - b.beds);
+      let detail = matches[0];
+      for (const d of matches) {
+          if (quote.beds <= d.beds) {
+              detail = d;
+              break;
+          }
+      }
+      if (!detail) detail = matches[matches.length - 1];
+
+      if (quote.frequency !== 'one-time') {
+         if (quote.frequency === 'weekly') total = tier.recurring.weekly.max;
+         else if (quote.frequency === 'bi-weekly') total = tier.recurring.biWeekly.max;
+         else if (quote.frequency === 'monthly') total = tier.recurring.monthly.max;
+      } else {
+         if (quote.serviceType === 'deep') total = detail.deep.max;
+         else if (quote.serviceType === 'move') total = detail.moveInOut.max;
+         else if (quote.serviceType === 'residential') total = detail.general.max;
+         else {
+             // fallback baseline
+             total = detail.general.max;
+         }
+      }
+
+      // Apply legacy multipliers for types not covered by tier spreadsheet
+      if (quote.frequency === 'one-time') {
+         if (quote.serviceType === 'vacation') total *= settings.vacationMultiplier;
+         else if (quote.serviceType === 'commercial') total *= settings.commercialMultiplier;
+         else if (quote.serviceType === 'construction') total *= settings.constructionMultiplier;
+      }
+    } else {
+      // Legacy basic fallback 
+      total += quote.sqFt * settings.pricePerSqFt;
+      total += quote.beds * settings.bedPrice;
+      total += quote.baths * settings.bathPrice;
+      total += quote.halfBaths * settings.halfBathPrice;
+
+      if (quote.serviceType === 'deep') total *= settings.deepCleanMultiplier;
+      else if (quote.serviceType === 'move') total *= settings.moveInOutMultiplier;
+      else if (quote.serviceType === 'vacation') total *= settings.vacationMultiplier;
+      else if (quote.serviceType === 'commercial') total *= settings.commercialMultiplier;
+      else if (quote.serviceType === 'construction') total *= settings.constructionMultiplier;
+
+      if (quote.frequency === 'weekly') total *= settings.weeklyMultiplier;
+      else if (quote.frequency === 'bi-weekly') total *= settings.biWeeklyMultiplier;
+      else if (quote.frequency === 'monthly') total *= settings.monthlyMultiplier;
+    }
 
     // Bed changing logic: 1st bed is free!
     if (quote.bedsToChange && quote.bedsToChange > 1) {
       total += (quote.bedsToChange - 1) * (settings.extras?.bedChange || 10);
-    }
-
-    if (quote.serviceType === 'deep') {
-      total *= settings.deepCleanMultiplier;
-    } else if (quote.serviceType === 'move') {
-      total *= settings.moveInOutMultiplier;
-    } else if (quote.serviceType === 'vacation') {
-      total *= settings.vacationMultiplier;
-    } else if (quote.serviceType === 'commercial') {
-      total *= settings.commercialMultiplier;
-    } else if (quote.serviceType === 'construction') {
-      total *= settings.constructionMultiplier;
     }
 
     quote.selectedExtras.forEach((extra) => {
@@ -127,14 +169,6 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
         total += settings.extras[extra as keyof typeof settings.extras];
       }
     });
-
-    if (quote.frequency === 'weekly') {
-      total *= settings.weeklyMultiplier;
-    } else if (quote.frequency === 'bi-weekly') {
-      total *= settings.biWeeklyMultiplier;
-    } else if (quote.frequency === 'monthly') {
-      total *= settings.monthlyMultiplier;
-    }
 
     return Math.round(total);
   };
@@ -197,6 +231,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
         baths: quote.baths,
         half_baths: quote.halfBaths,
         beds_to_change: quote.bedsToChange,
+        selected_extras: quote.selectedExtras,
         service_type: quote.serviceType,
         frequency: quote.frequency,
         total: totalPrice,

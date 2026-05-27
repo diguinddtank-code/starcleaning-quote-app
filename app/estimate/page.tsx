@@ -6,10 +6,11 @@ import { useSettings } from '@/context/SettingsContext';
 import { Stepper } from '@/components/ui/Stepper';
 import { ServiceCard, ExtraCard } from '@/components/ui/Cards';
 import { ServiceType } from '@/lib/types';
-import { Home, Sparkles, Key, Wind, Droplets, Box, WashingMachine, CarFront, FileText, CheckCircle2, Building2, Hammer, Printer, Loader2, BookOpen, ShieldAlert, Copy, MessageCircle, X, Calendar } from 'lucide-react';
+import { Home, Sparkles, Key, Wind, Droplets, Box, WashingMachine, CarFront, FileText, CheckCircle2, Building2, Hammer, Printer, Loader2, BookOpen, ShieldAlert, Copy, MessageCircle, X, Calendar, Send } from 'lucide-react';
 import { useState, useEffect, Suspense } from 'react';
 import { SavedQuote } from '@/lib/types';
 import { QuoteDocument } from '@/components/QuoteDocument';
+import { generateQuoteEmailHtml } from '@/lib/emailTemplate';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -34,6 +35,70 @@ function CalculatorContent() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showScripts, setShowScripts] = useState(false);
 
+  const [isSendingWebhook, setIsSendingWebhook] = useState(false);
+  const [webhookSentStatus, setWebhookSentStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  const handleSendEstimateWebhook = async () => {
+    setIsSendingWebhook(true);
+    setWebhookSentStatus('idle');
+    try {
+      const WEBHOOK_URL = 'https://webhook.infra-remakingautomacoes.cloud/webhook/estimatesc';
+      const estimateUrl = savedEstimate 
+        ? `${window.location.origin}/estimate/view?id=${savedEstimate.id}` 
+        : (typeof window !== 'undefined' ? `${window.location.origin}/estimate/view?id=latest` : '');
+      
+      const quoteObj: SavedQuote = savedEstimate || {
+        ...quote,
+        id: 'latest',
+        date: new Date().toISOString(),
+        total: totalPrice,
+        customerName: customerName,
+        customerEmail: customerEmail,
+        customerPhone: customerPhone,
+        customerAddress: ''
+      };
+      const htmlContent = generateQuoteEmailHtml(quoteObj, settings, estimateUrl);
+      
+      const payload = {
+        event: 'estimate_sent',
+        leadId: leadId || null,
+        customerName,
+        customerEmail,
+        customerPhone,
+        total: totalPrice,
+        frequency: quote.frequency,
+        serviceType: quote.serviceType,
+        sqFt: quote.sqFt,
+        beds: quote.beds,
+        baths: quote.baths,
+        extras: quote.selectedExtras || [],
+        estimateUrl: estimateUrl,
+        htmlContent: htmlContent
+      };
+
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error('Server returned ' + response.status);
+      }
+
+      setWebhookSentStatus('success');
+      setTimeout(() => setWebhookSentStatus('idle'), 4000);
+    } catch (error) {
+      console.error('Failed to send estimate to webhook:', error);
+      setWebhookSentStatus('error');
+      setTimeout(() => setWebhookSentStatus('idle'), 4000);
+    } finally {
+      setIsSendingWebhook(false);
+    }
+  };
+
   useEffect(() => {
     if (leadId) {
       const lead = leads.find(l => l.id === leadId);
@@ -50,19 +115,34 @@ function CalculatorContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leadId, leads]);
 
-  // Calculate base residential total for recurring pricing
-  const standardTotal = (() => {
+  const { weeklyPrice, biWeeklyPrice, monthlyPrice } = (() => {
+    let tier = settings.pricingTiers?.find(t => quote.sqFt >= t.minSqft && quote.sqFt <= t.maxSqft);
+    if (!tier && settings.pricingTiers && settings.pricingTiers.length > 0) {
+      tier = settings.pricingTiers.reduce((prev, curr) => 
+        Math.abs(curr.maxSqft - quote.sqFt) < Math.abs(prev.maxSqft - quote.sqFt) ? curr : prev
+      );
+    }
+
+    if (tier) {
+      return {
+        weeklyPrice: tier.recurring.weekly.max,
+        biWeeklyPrice: tier.recurring.biWeekly.max,
+        monthlyPrice: tier.recurring.monthly.max
+      };
+    }
+
+    // fallback
     let base = settings.basePrice;
     base += quote.sqFt * settings.pricePerSqFt;
     base += quote.beds * settings.bedPrice;
     base += quote.baths * settings.bathPrice;
     base += quote.halfBaths * settings.halfBathPrice;
-    return Math.round(base);
+    return {
+      weeklyPrice: Math.round(base * settings.weeklyMultiplier),
+      biWeeklyPrice: Math.round(base * settings.biWeeklyMultiplier),
+      monthlyPrice: Math.round(base * settings.monthlyMultiplier)
+    };
   })();
-
-  const weeklyPrice = Math.round(standardTotal * 0.80);
-  const biWeeklyPrice = Math.round(standardTotal * 0.85);
-  const monthlyPrice = Math.round(standardTotal * 0.90);
 
   // Calculate estimated duration (man-hours) internally
   const calculateDuration = () => {
@@ -86,7 +166,7 @@ function CalculatorContent() {
 
     hours *= multiplier;
 
-    quote.selectedExtras.forEach((extra) => {
+    (quote.selectedExtras || []).forEach((extra) => {
       if (extra === 'oven') hours += 0.5;
       if (extra === 'fridge') hours += 0.5;
       if (extra === 'windows') hours += 1.0;
@@ -119,11 +199,11 @@ function CalculatorContent() {
   };
 
   const toggleExtra = (extraId: string) => {
-    const isSelected = quote.selectedExtras.includes(extraId);
+    const isSelected = (quote.selectedExtras || []).includes(extraId);
     if (isSelected) {
-      updateQuote({ selectedExtras: quote.selectedExtras.filter(id => id !== extraId) });
+      updateQuote({ selectedExtras: (quote.selectedExtras || []).filter(id => id !== extraId) });
     } else {
-      updateQuote({ selectedExtras: [...quote.selectedExtras, extraId] });
+      updateQuote({ selectedExtras: [...(quote.selectedExtras || []), extraId] });
     }
   };
 
@@ -224,7 +304,7 @@ function CalculatorContent() {
               />
               <ServiceCard 
                 title="Weekly" 
-                description={`${Math.round((1 - settings.weeklyMultiplier) * 100)}% discount.`} 
+                description="Most popular recurring." 
                 icon={<Calendar size={20} />} 
                 selected={quote.frequency === 'weekly'} 
                 onClick={() => quote.serviceType === 'residential' && updateQuote({ frequency: 'weekly' })} 
@@ -232,7 +312,7 @@ function CalculatorContent() {
               />
               <ServiceCard 
                 title="Bi-weekly" 
-                description={`${Math.round((1 - settings.biWeeklyMultiplier) * 100)}% discount.`} 
+                description="Every 14 days." 
                 icon={<Calendar size={20} />} 
                 selected={quote.frequency === 'bi-weekly'} 
                 onClick={() => quote.serviceType === 'residential' && updateQuote({ frequency: 'bi-weekly' })} 
@@ -240,7 +320,7 @@ function CalculatorContent() {
               />
               <ServiceCard 
                 title="Monthly" 
-                description={`${Math.round((1 - settings.monthlyMultiplier) * 100)}% discount.`} 
+                description="Every 4 weeks." 
                 icon={<Calendar size={20} />} 
                 selected={quote.frequency === 'monthly'} 
                 onClick={() => quote.serviceType === 'residential' && updateQuote({ frequency: 'monthly' })} 
@@ -322,11 +402,11 @@ function CalculatorContent() {
               <Box className="text-sky-500" size={20} /> Add-on Services
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <ExtraCard title="Inside Oven" price={settings.extras.oven} icon={<Box size={18} />} selected={quote.selectedExtras.includes('oven')} onClick={() => toggleExtra('oven')} />
-              <ExtraCard title="Inside Fridge" price={settings.extras.fridge} icon={<Box size={18} />} selected={quote.selectedExtras.includes('fridge')} onClick={() => toggleExtra('fridge')} />
-              <ExtraCard title="Interior Windows" price={settings.extras.windows} icon={<Wind size={18} />} selected={quote.selectedExtras.includes('windows')} onClick={() => toggleExtra('windows')} />
-              <ExtraCard title="Inside Cabinets" price={settings.extras.cabinets} icon={<Box size={18} />} selected={quote.selectedExtras.includes('cabinets')} onClick={() => toggleExtra('cabinets')} />
-              <ExtraCard title="Garage Sweep" price={settings.extras.garage} icon={<CarFront size={18} />} selected={quote.selectedExtras.includes('garage')} onClick={() => toggleExtra('garage')} />
+              <ExtraCard title="Inside Oven" price={settings.extras.oven} icon={<Box size={18} />} selected={(quote.selectedExtras || []).includes('oven')} onClick={() => toggleExtra('oven')} />
+              <ExtraCard title="Inside Fridge" price={settings.extras.fridge} icon={<Box size={18} />} selected={(quote.selectedExtras || []).includes('fridge')} onClick={() => toggleExtra('fridge')} />
+              <ExtraCard title="Interior Windows" price={settings.extras.windows} icon={<Wind size={18} />} selected={(quote.selectedExtras || []).includes('windows')} onClick={() => toggleExtra('windows')} />
+              <ExtraCard title="Inside Cabinets" price={settings.extras.cabinets} icon={<Box size={18} />} selected={(quote.selectedExtras || []).includes('cabinets')} onClick={() => toggleExtra('cabinets')} />
+              <ExtraCard title="Garage Sweep" price={settings.extras.garage} icon={<CarFront size={18} />} selected={(quote.selectedExtras || []).includes('garage')} onClick={() => toggleExtra('garage')} />
             </div>
           </section>
         </div>
@@ -340,52 +420,45 @@ function CalculatorContent() {
             </div>
             
             <div className="space-y-3 mb-6 text-sm">
-              <div className="flex justify-between text-zinc-600">
-                <span>Base Rate</span>
-                <span className="font-medium text-zinc-900">${settings.basePrice}</span>
-              </div>
-              <div className="flex justify-between text-zinc-600">
-                <span>Area ({quote.sqFt} sq ft)</span>
-                <span className="font-medium text-zinc-900">${Math.round(quote.sqFt * settings.pricePerSqFt)}</span>
-              </div>
-              <div className="flex justify-between text-zinc-600">
-                <span>Rooms ({quote.beds}B, {quote.baths}BA)</span>
-                <span className="font-medium text-zinc-900">${(quote.beds * settings.bedPrice) + (quote.baths * settings.bathPrice) + (quote.halfBaths * settings.halfBathPrice)}</span>
-              </div>
-              
-              {(quote.bedsToChange || 0) > 1 && (
-                <div className="flex justify-between text-zinc-600">
-                  <span>Bed Linens ({quote.bedsToChange} - 1st Free)</span>
-                  <span className="font-medium text-zinc-900">${((quote.bedsToChange || 0) - 1) * (settings.extras?.bedChange || 10)}</span>
+              <div className="bg-sky-50 p-4 rounded-xl border border-sky-100 mb-4">
+                <p className="text-xs font-bold text-sky-800 uppercase tracking-wider mb-2">Service Details</p>
+                <div className="grid grid-cols-2 gap-2 text-sky-900 font-medium">
+                  <div><span className="text-sky-600/70 block text-[10px] uppercase">Service Type</span> <span className="capitalize">{quote.serviceType === 'move' ? 'Move In/Out' : quote.serviceType} Cleaning</span></div>
+                  <div><span className="text-sky-600/70 block text-[10px] uppercase">Area</span> {quote.sqFt} sq ft</div>
+                  <div><span className="text-sky-600/70 block text-[10px] uppercase">Rooms</span> {quote.beds} Beds, {quote.baths} Baths</div>
+                  <div><span className="text-sky-600/70 block text-[10px] uppercase">Frequency</span> <span className="capitalize">{quote.frequency}</span></div>
                 </div>
-              )}
-              
-              {quote.serviceType !== 'residential' && (
-                <div className="flex justify-between text-sky-600 font-medium bg-sky-50/50 p-2 rounded-lg -mx-2">
-                  <span>
-                    {quote.serviceType === 'deep' ? 'Deep Clean' : 
-                     quote.serviceType === 'move' ? 'Move In/Out' : 
-                     quote.serviceType === 'vacation' ? 'Vacation/Airbnb' : 
-                     quote.serviceType === 'commercial' ? 'Commercial' : 
-                     'Post-Construction'} Multiplier
-                  </span>
-                  <span>
-                    x{quote.serviceType === 'deep' ? settings.deepCleanMultiplier : 
-                      quote.serviceType === 'move' ? settings.moveInOutMultiplier : 
-                      quote.serviceType === 'vacation' ? settings.vacationMultiplier : 
-                      quote.serviceType === 'commercial' ? settings.commercialMultiplier : 
-                      settings.constructionMultiplier}
-                  </span>
-                </div>
-              )}
+              </div>
 
-              {quote.selectedExtras.length > 0 && (
-                <div className="pt-3 mt-3 border-t border-zinc-100">
-                  <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Add-ons</p>
-                  {quote.selectedExtras.map(extra => (
-                    <div key={extra} className="flex justify-between text-zinc-600 mb-1.5">
-                      <span className="capitalize">{extra}</span>
-                      <span className="font-medium text-zinc-900">${settings.extras[extra as keyof typeof settings.extras]}</span>
+              <div className="mb-4">
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">What's Included</p>
+                <ul className="text-zinc-600 space-y-1.5 text-xs">
+                  <li className="flex items-start gap-1.5 font-medium"><CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Dusting of all surfaces, furniture, and baseboards</li>
+                  <li className="flex items-start gap-1.5 font-medium"><CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Vacuuming and mopping all floors</li>
+                  <li className="flex items-start gap-1.5 font-medium"><CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Full sanitization of bathrooms (toilets, showers, sinks)</li>
+                  <li className="flex items-start gap-1.5 font-medium"><CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Kitchen cleaning (counters, sink, exterior of appliances)</li>
+                  {quote.serviceType === 'deep' && (
+                    <li className="flex items-start gap-1.5 font-bold text-sky-700 bg-sky-50 rounded px-1 -mx-1"><Sparkles size={14} className="text-sky-500 shrink-0 mt-0.5" /> Heavy-duty scrubbing, doors, door frames, and interior windows</li>
+                  )}
+                  {quote.serviceType === 'move' && (
+                    <li className="flex items-start gap-1.5 font-bold text-sky-700 bg-sky-50 rounded px-1 -mx-1"><Sparkles size={14} className="text-sky-500 shrink-0 mt-0.5" /> Inside cabinets/drawers, inside fridge/oven, and deep cleaning</li>
+                  )}
+                  {quote.serviceType === 'vacation' && (
+                    <li className="flex items-start gap-1.5 font-bold text-sky-700 bg-sky-50 rounded px-1 -mx-1"><Sparkles size={14} className="text-sky-500 shrink-0 mt-0.5" /> Restocking supplies, laundry setup, and staging</li>
+                  )}
+                  {(quote.bedsToChange || 0) > 0 && (
+                    <li className="flex items-start gap-1.5 font-medium"><CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Changing Linens ({quote.bedsToChange} {quote.bedsToChange === 1 ? 'Bed' : 'Beds'})</li>
+                  )}
+                </ul>
+              </div>
+
+              {(quote.selectedExtras || []).length > 0 && (
+                <div className="pt-3 border-t border-zinc-100">
+                  <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Selected Add-ons</p>
+                  {(quote.selectedExtras || []).map(extra => (
+                    <div key={extra} className="flex items-center gap-1.5 text-zinc-600 mb-1.5 text-xs font-medium">
+                      <CheckCircle2 size={14} className="text-sky-500" />
+                      <span className="capitalize">{extra.replace(/([A-Z])/g, ' $1').trim()}</span>
                     </div>
                   ))}
                 </div>
@@ -393,13 +466,9 @@ function CalculatorContent() {
             </div>
 
             <div className="pt-4 border-t border-zinc-200 mb-6">
-              <div className="flex justify-between items-end mb-2">
+              <div className="flex justify-between items-end mb-4">
                 <span className="text-zinc-500 font-medium text-sm">Total Estimate</span>
                 <span className="text-3xl font-bold text-zinc-900 tracking-tight">${totalPrice}</span>
-              </div>
-              <div className="flex justify-between items-center bg-zinc-50 p-2 rounded-lg border border-zinc-100 mb-4">
-                <span className="text-xs text-zinc-500 font-medium">Est. Duration (Internal)</span>
-                <span className="text-sm font-bold text-zinc-700">{estimatedHours} hours</span>
               </div>
 
               {quote.frequency === 'one-time' && (
@@ -409,39 +478,19 @@ function CalculatorContent() {
                   </div>
                   <p className="text-xs font-bold text-sky-800 uppercase tracking-wider mb-2 relative z-10">Recurring Discounts</p>
                   <div className="flex items-center justify-between text-xs relative z-10">
-                    <span className="text-sky-700 font-medium">Weekly (20% off)</span>
+                    <span className="text-sky-700 font-medium">Weekly</span>
                     <span className="font-bold text-sky-900">${weeklyPrice} <span className="text-[10px] font-normal text-sky-600">/visit</span></span>
                   </div>
                   <div className="flex items-center justify-between text-xs border-t border-sky-200/50 pt-2 relative z-10">
-                    <span className="text-sky-700 font-medium">Bi-weekly (15% off)</span>
+                    <span className="text-sky-700 font-medium">Bi-weekly</span>
                     <span className="font-bold text-sky-900">${biWeeklyPrice} <span className="text-[10px] font-normal text-sky-600">/visit</span></span>
                   </div>
                   <div className="flex items-center justify-between text-xs border-t border-sky-200/50 pt-2 relative z-10">
-                    <span className="text-sky-700 font-medium">Every 4 Weeks (10% off)</span>
+                    <span className="text-sky-700 font-medium">Every 4 Weeks</span>
                     <span className="font-bold text-sky-900">${monthlyPrice} <span className="text-[10px] font-normal text-sky-600">/visit</span></span>
                   </div>
                 </div>
               )}
-            </div>
-
-            <div className="mb-6 p-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200 shadow-sm">
-              <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <ShieldAlert size={14} className="text-amber-600" />
-                Negotiation Margin
-              </p>
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-xs items-center">
-                  <span className="text-amber-900 font-medium">Discount (10%)</span>
-                  <span className="text-amber-700 font-bold bg-amber-100/50 px-2 py-0.5 rounded">${Math.round(totalPrice * 0.9)}</span>
-                </div>
-                <div className="flex justify-between text-xs items-center">
-                  <span className="text-red-900 font-medium">Bottom Limit (15%)</span>
-                  <span className="text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded">${Math.round(totalPrice * 0.85)}</span>
-                </div>
-              </div>
-              <Link href="/playbook" target="_blank" className="mt-3 flex items-center justify-center gap-1.5 w-full py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors">
-                <BookOpen size={14} /> Open Sales Playbook
-              </Link>
             </div>
 
             <div className="space-y-3">
@@ -516,6 +565,34 @@ function CalculatorContent() {
                   </>
                 ) : (
                   'Save Lead to Database'
+                )}
+              </button>
+
+              <button 
+                onClick={handleSendEstimateWebhook}
+                disabled={isSendingWebhook || !customerName}
+                className="w-full py-3 mt-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold rounded-lg transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSendingWebhook ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Enviando...
+                  </>
+                ) : webhookSentStatus === 'success' ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                    Estimate Enviado!
+                  </>
+                ) : webhookSentStatus === 'error' ? (
+                  <>
+                    <X className="w-4 h-4 text-rose-200" />
+                    Erro ao Enviar
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Enviar Estimate
+                  </>
                 )}
               </button>
 

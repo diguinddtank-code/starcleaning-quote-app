@@ -1,13 +1,119 @@
-import React from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { SavedQuote, PricingSettings } from '@/lib/types';
+import { CheckCircle2, Loader2, Send, X, Eye, EyeOff } from 'lucide-react';
+import { generateQuoteEmailHtml } from '@/lib/emailTemplate';
 
 interface QuoteDocumentProps {
   quote: SavedQuote;
   settings: PricingSettings;
+  showAdminControls?: boolean;
 }
 
-export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
+export function QuoteDocument({ quote, settings, showAdminControls = true }: QuoteDocumentProps) {
+  const [isAdminView, setIsAdminView] = useState(showAdminControls);
+  const [isApproving, setIsApproving] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [sentStatus, setSentStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  // Sync state with prop updates
+  useEffect(() => {
+    setIsAdminView(showAdminControls);
+  }, [showAdminControls]);
+
+  // Auto-detect view from URL search param
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('view') === 'client' || params.get('client') === 'true') {
+        setIsAdminView(false);
+      }
+    }
+  }, []);
+
+  const handleSendEstimate = async () => {
+    setIsSending(true);
+    setSentStatus('idle');
+    try {
+      const WEBHOOK_URL = 'https://webhook.infra-remakingautomacoes.cloud/webhook/estimatesc';
+      const estimateUrl = typeof window !== 'undefined' 
+        ? `${window.location.origin}/estimate/view?id=${quote.id}` 
+        : '';
+      
+      const htmlContent = generateQuoteEmailHtml(quote, settings, estimateUrl);
+        
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          event: 'estimate_sent',
+          leadId: quote.leadId || null,
+          customerName: quote.customerName || '',
+          customerEmail: quote.customerEmail || '',
+          customerPhone: quote.customerPhone || '',
+          customerAddress: quote.customerAddress || '',
+          total: quote.total,
+          frequency: quote.frequency,
+          serviceType: quote.serviceType,
+          sqFt: quote.sqFt,
+          beds: quote.beds,
+          baths: quote.baths,
+          extras: quote.selectedExtras || [],
+          estimateUrl: estimateUrl,
+          htmlContent: htmlContent
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to send estimate');
+      setSentStatus('success');
+      setTimeout(() => setSentStatus('idle'), 4000);
+    } catch (error) {
+      console.error('Failed to send estimate:', error);
+      setSentStatus('error');
+      setTimeout(() => setSentStatus('idle'), 4000);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    setIsApproving(true);
+    try {
+      // N8N Webhook for client approval
+      const WEBHOOK_URL = 'https://webhook.infra-remakingautomacoes.cloud/webhook/approve-estimate';
+      
+      await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          event: 'estimate_approved',
+          quoteId: quote.id,
+          customerName: quote.customerName,
+          customerEmail: quote.customerEmail,
+          total: quote.total,
+          serviceType: quote.serviceType,
+          frequency: quote.frequency
+        }),
+      });
+      
+      setIsApproved(true);
+    } catch (error) {
+      console.error('Failed to approve estimate:', error);
+      // Even if webhook fails locally, for UX we can show success, 
+      // or you can show an error toast.
+      setIsApproved(true); 
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
   // Calculate line items
   const areaPrice = Math.round(quote.sqFt * settings.pricePerSqFt);
   const roomsPrice = (quote.beds * settings.bedPrice) + (quote.baths * settings.bathPrice) + (quote.halfBaths * settings.halfBathPrice);
@@ -32,15 +138,11 @@ export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
     }
   };
 
-  const multiplier = getMultiplier();
-  const bedChangeCharge = ((quote.bedsToChange || 0) > 1) ? ((quote.bedsToChange || 0) - 1) * (settings.extras?.bedChange || 10) : 0;
-  const subtotal = settings.basePrice + areaPrice + roomsPrice + bedChangeCharge;
-  const serviceTotal = Math.round(subtotal * multiplier);
-  
   const validUntil = new Date(quote.date);
   validUntil.setDate(validUntil.getDate() + 30);
 
-  const extrasTotal = quote.selectedExtras.reduce((sum, extra) => sum + settings.extras[extra as keyof typeof settings.extras], 0);
+  const extrasTotal = (quote.selectedExtras || []).reduce((sum, extra) => sum + settings.extras[extra as keyof typeof settings.extras], 0);
+  const primaryServiceCost = quote.total - extrasTotal - (((quote.bedsToChange || 0) > 1) ? ((quote.bedsToChange || 0) - 1) * (settings.extras?.bedChange || 10) : 0);
   
   // Calculate standard total for recurring preview exactly like estimate/page.tsx
   const standardTotalForPreview = settings.basePrice + areaPrice + roomsPrice;
@@ -48,8 +150,19 @@ export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
   const biWeeklyPrice = Math.round(standardTotalForPreview * (settings.biWeeklyMultiplier || 0.85));
   const monthlyPrice = Math.round(standardTotalForPreview * (settings.monthlyMultiplier || 0.9));
 
+  const serviceDescriptions: Record<string, string[]> = {
+    residential: ["General dusting & wipe down of surfaces", "Vacuum & mop all accessible floors", "Kitchen counters & exterior of appliances", "Full bathroom sanitization", "Empty small trash bins"],
+    deep: ["Everything in Residential, PLUS:", "Baseboards & window sills wiped", "Ceiling fans & light fixtures dusted", "Extra scrubbing in high-traffic bathrooms", "Heavy dusting & cobweb removal"],
+    move: ["Everything in Deep Clean, PLUS:", "Inside all empty cabinets and drawers", "Inside all empty closets", "Inside & behind appliances (if moved)"],
+    vacation: ["Check for damages & left items", "Launder all linens & remake beds", "Restock supplies (toilet paper, soap)", "Detailed clean & sanitization for next guest"],
+    commercial: ["Reception & common areas", "Desk & cubicle wipe down", "Restroom maintenance", "Breakroom cleaning", "Trash removal & flooring"],
+    construction: ["Heavy dust removal from all surfaces", "Paint drop & sticker removal", "Vacuum inside cabinets & drawers", "Detailed trim & baseboard wipe down"]
+  };
+
   return (
-    <div className="bg-white p-6 sm:p-10 text-zinc-900 font-sans max-w-3xl mx-auto border border-zinc-200 shadow-sm print:shadow-none print:border-none print:p-0" id="quote-document">
+    <div className="space-y-4 max-w-3xl mx-auto">
+      {/* Main Clean Document Sheet */}
+      <div className="bg-white p-6 sm:p-10 text-zinc-900 font-sans border border-zinc-200 shadow-sm print:shadow-none print:border-none print:p-0 rounded-2xl" id="quote-document">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start mb-10 gap-6">
         <div>
@@ -131,48 +244,46 @@ export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
           </thead>
           <tbody className="divide-y divide-zinc-100">
             <tr>
-              <td className="py-3 text-zinc-700">
-                <span className="font-medium text-zinc-900 block">Base Service Rate</span>
-                <span className="text-xs text-zinc-500">Standard starting rate for all cleanings</span>
+              <td className="py-4 text-zinc-700">
+                <span className="font-bold text-zinc-900 block text-base">{serviceNames[quote.serviceType as keyof typeof serviceNames]} Cleaning</span>
+                <span className="text-xs text-zinc-500 mb-2 block">Complete cleaning for {quote.sqFt} sq ft, {quote.beds} Bedrooms, {quote.baths + quote.halfBaths} Bathrooms</span>
+                
+                <div className="bg-zinc-50 rounded-lg p-3 mt-2 border border-zinc-100">
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider mb-2 block">What&apos;s included:</span>
+                  <ul className="text-xs text-zinc-600 space-y-1">
+                    {serviceDescriptions[quote.serviceType]?.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-1.5">
+                        <CheckCircle2 size={12} className="text-emerald-500 mt-0.5 shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </td>
-              <td className="py-3 text-right font-medium text-zinc-900">${settings.basePrice}</td>
-            </tr>
-            <tr>
-              <td className="py-3 text-zinc-700">
-                <span className="font-medium text-zinc-900 block">Area Adjustment</span>
-                <span className="text-xs text-zinc-500">Based on {quote.sqFt} square feet</span>
-              </td>
-              <td className="py-3 text-right font-medium text-zinc-900">${areaPrice}</td>
-            </tr>
-            <tr>
-              <td className="py-3 text-zinc-700">
-                <span className="font-medium text-zinc-900 block">Rooms Adjustment</span>
-                <span className="text-xs text-zinc-500">{quote.beds} Bedrooms, {quote.baths} Bathrooms, {quote.halfBaths} Half Baths</span>
-              </td>
-              <td className="py-3 text-right font-medium text-zinc-900">${roomsPrice}</td>
+              <td className="py-4 text-right font-medium text-zinc-900 align-top">${primaryServiceCost}</td>
             </tr>
             {(quote.bedsToChange || 0) > 1 && (
               <tr>
                 <td className="py-3 text-zinc-700">
-                  <span className="font-medium text-zinc-900 block">Bed Linens Change</span>
-                  <span className="text-xs text-zinc-500">{quote.bedsToChange} Beds (1st one is complimentary)</span>
+                  <span className="font-medium text-zinc-900 block">Extra Bed Linens Change</span>
+                  <span className="text-xs text-zinc-500">{(quote.bedsToChange || 0) - 1} extra beds (1st bed is complimentary)</span>
                 </td>
-                <td className="py-3 text-right font-medium text-zinc-900">${((quote.bedsToChange || 0) - 1) * (settings.extras?.bedChange || 10)}</td>
+                <td className="py-3 text-right font-medium text-zinc-900 align-top">${((quote.bedsToChange || 0) - 1) * (settings.extras?.bedChange || 10)}</td>
               </tr>
             )}
-            {quote.selectedExtras.length > 0 && (
+            {(quote.selectedExtras || []).length > 0 && (
               <tr>
                 <td className="py-3 text-zinc-700" colSpan={2}>
                   <span className="font-bold text-xs text-zinc-400 uppercase tracking-wider block mt-2 mb-1">Add-on Services</span>
                 </td>
               </tr>
             )}
-            {quote.selectedExtras.map(extra => (
+            {(quote.selectedExtras || []).map(extra => (
               <tr key={extra}>
                 <td className="py-3 text-zinc-700">
-                  <span className="font-medium text-zinc-900 capitalize">{extra}</span>
+                  <span className="font-medium text-zinc-900 capitalize">{extra.replace(/([A-Z])/g, ' $1').trim()}</span>
                 </td>
-                <td className="py-3 text-right font-medium text-zinc-900">${settings.extras[extra as keyof typeof settings.extras]}</td>
+                <td className="py-3 text-right font-medium text-zinc-900 align-top">${settings.extras[extra as keyof typeof settings.extras]}</td>
               </tr>
             ))}
           </tbody>
@@ -208,19 +319,14 @@ export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
 
         <div className="w-full sm:w-80 bg-zinc-50 p-5 rounded-xl border border-zinc-200">
           <div className="flex justify-between items-center mb-3 text-sm">
-            <span className="text-zinc-500">Subtotal</span>
-            <span className="font-medium text-zinc-900">${subtotal}</span>
+            <span className="text-zinc-500">{serviceNames[quote.serviceType as keyof typeof serviceNames]} Cleaning</span>
+            <span className="font-medium text-zinc-900">${primaryServiceCost}</span>
           </div>
-          {multiplier !== 1 && (
+          
+          {((quote.bedsToChange || 0) > 1 || (quote.selectedExtras || []).length > 0) && (
             <div className="flex justify-between items-center mb-3 text-sm">
-              <span className="text-zinc-500">{serviceNames[quote.serviceType]} Multiplier</span>
-              <span className="font-medium text-sky-600">+ ${serviceTotal - subtotal}</span>
-            </div>
-          )}
-          {quote.selectedExtras.length > 0 && (
-            <div className="flex justify-between items-center mb-3 text-sm">
-              <span className="text-zinc-500">Add-ons Total</span>
-              <span className="font-medium text-zinc-900">+ ${extrasTotal}</span>
+              <span className="text-zinc-500">Add-ons & Extras</span>
+              <span className="font-medium text-zinc-900">+ ${extrasTotal + (((quote.bedsToChange || 0) > 1) ? ((quote.bedsToChange || 0) - 1) * (settings.extras?.bedChange || 10) : 0)}</span>
             </div>
           )}
           <div className="flex justify-between items-center pt-4 border-t border-zinc-200 mt-2">
@@ -230,32 +336,96 @@ export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
         </div>
       </div>
       
-      {/* Internal Team Negotiation Guide - HIDDEN ON PRINT */}
-      <div className="mb-12 print:hidden">
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-amber-800 font-bold mb-3 uppercase tracking-wider text-xs">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-            Internal Team: Negotiation Margin
+      {/* Call to Action - Workflows */}
+      {isAdminView ? (
+        <div className="mb-12 print:hidden flex flex-col sm:flex-row justify-between items-center gap-4 bg-zinc-50 border border-zinc-200/60 rounded-2xl p-5">
+          <div className="flex flex-col text-left">
+            <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Estimate Controls</span>
+            <span className="text-xs font-semibold text-zinc-500 mt-0.5">Trigger dispatch automation or approve directly</span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div className="bg-white/60 p-3 rounded-lg border border-amber-100">
-              <span className="block text-[10px] uppercase font-bold text-amber-700/70 mb-1">Pass to Client</span>
-              <span className="font-bold text-zinc-900">${quote.total}</span>
-            </div>
-            <div className="bg-white/60 p-3 rounded-lg border border-amber-100">
-              <span className="block text-[10px] uppercase font-bold text-amber-700/70 mb-1">Max 10% Discount</span>
-              <span className="font-bold text-amber-700">${Math.round(quote.total * 0.9)}</span>
-            </div>
-            <div className="bg-white/60 p-3 rounded-lg border border-red-100">
-              <span className="block text-[10px] uppercase font-bold text-red-700/70 mb-1">Max 15% (Absolute Limit)</span>
-              <span className="font-bold text-red-600">${Math.round(quote.total * 0.85)}</span>
-            </div>
-            <div className="bg-white/60 p-3 rounded-lg border border-amber-100 flex items-center justify-center text-center text-[10px] text-amber-800">
-              Use discounts only to close the sale if price is the main objection.
-            </div>
+          <div className="flex flex-wrap gap-3 w-full sm:w-auto justify-end">
+            {/* Webhook Button */}
+            <button 
+              type="button"
+              onClick={handleSendEstimate}
+              disabled={isSending}
+              className={`flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all shadow-sm cursor-pointer border ${
+                sentStatus === 'success'
+                  ? 'bg-emerald-600 text-white border-emerald-700'
+                  : sentStatus === 'error'
+                  ? 'bg-rose-600 text-white border-rose-700'
+                  : 'bg-white hover:bg-zinc-50 text-zinc-700 hover:text-zinc-900 border-zinc-200'
+              }`}
+            >
+              {isSending ? (
+                <>
+                  <Loader2 className="animate-spin" size={18} />
+                  <span>Sending...</span>
+                </>
+              ) : sentStatus === 'success' ? (
+                <>
+                  <CheckCircle2 size={18} className="text-emerald-200" />
+                  <span>Estimate Sent!</span>
+                </>
+              ) : sentStatus === 'error' ? (
+                <>
+                  <X size={18} className="text-rose-200" />
+                  <span>Error Sending</span>
+                </>
+              ) : (
+                <>
+                  <Send size={18} className="text-sky-600 shrink-0" />
+                  <span>Send Estimate</span>
+                </>
+              )}
+            </button>
+
+            {/* Approve Button */}
+            {isApproved ? (
+              <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-5 py-3 rounded-xl font-bold border border-emerald-200 text-sm">
+                <CheckCircle2 size={18} />
+                Approved!
+              </div>
+            ) : (
+              <button 
+                type="button"
+                onClick={handleApprove}
+                disabled={isApproving}
+                className="flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 text-white px-5 py-3 rounded-xl font-bold text-sm transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer border border-sky-700"
+              >
+                {isApproving && <Loader2 className="animate-spin" size={18} />}
+                Approve Estimate
+              </button>
+            )}
           </div>
         </div>
-      </div>
+      ) : (
+        /* Customer-friendly Approve CTA style */
+        <div className="mb-12 print:hidden flex flex-col sm:flex-row justify-between items-center gap-4 bg-emerald-50/60 border border-emerald-100 rounded-2xl p-6">
+          <div className="flex flex-col text-left">
+            <span className="text-xs font-bold text-emerald-800 uppercase tracking-widest">Approve Proposal</span>
+            <span className="text-xs font-medium text-emerald-600 mt-0.5">Accept terms and schedule cleaning services</span>
+          </div>
+          <div className="w-full sm:w-auto">
+            {isApproved ? (
+              <div className="flex items-center justify-center gap-2 text-emerald-600 bg-white px-6 py-3.5 rounded-xl font-bold border border-emerald-200 shadow-sm text-sm">
+                <CheckCircle2 size={18} />
+                Proposal Approved! 🎉
+              </div>
+            ) : (
+              <button 
+                type="button"
+                onClick={handleApprove}
+                disabled={isApproving}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3.5 rounded-xl font-black text-sm transition-all shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 cursor-pointer border border-emerald-700"
+              >
+                {isApproving && <Loader2 className="animate-spin" size={18} />}
+                Accept & Approve Estimate
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Terms */}
       <div className="border-t border-zinc-200 pt-8">
@@ -269,5 +439,6 @@ export function QuoteDocument({ quote, settings }: QuoteDocumentProps) {
         </ul>
       </div>
     </div>
-  );
+  </div>
+);
 }

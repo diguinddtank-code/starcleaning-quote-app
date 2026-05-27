@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLead } from '@/context/LeadContext';
 import { useQuote } from '@/context/QuoteContext';
@@ -18,11 +19,33 @@ export default function DashboardPage() {
   const { savedQuotes } = useQuote();
   const { user } = useAuth();
   const { language, t, translateStage } = useLanguage();
+
+  // User Local Session Traversal History
+  const [visitedLeads, setVisitedLeads] = useState<any[]>([]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('commercial_recent_leads');
+      if (stored) {
+        const parsedIds: string[] = JSON.parse(stored);
+        if (Array.isArray(parsedIds)) {
+          // Map stored IDs back to active database leads (maintaining chronological order)
+          const matchedLeads = parsedIds
+            .map(id => leads.find(l => l.id === id))
+            .filter((l): l is NonNullable<typeof l> => !!l);
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setVisitedLeads(matchedLeads);
+        }
+      }
+    } catch (e) {
+      console.error('Error reading visit session log', e);
+    }
+  }, [leads]);
   
   // Metrics
   const totalLeads = leads.length;
-  const newLeadsCount = leads.filter(l => l.ETAPA?.toLowerCase().includes('novo') || l.ETAPA?.toLowerCase() === 'new').length;
-  const scheduledCount = leads.filter(l => l.ETAPA?.toLowerCase().includes('agendado')).length;
+  const newLeadsCount = leads.filter(l => translateStage(l.ETAPA || '').toLowerCase() === translateStage('New Lead').toLowerCase()).length;
+  const closingCount = leads.filter(l => translateStage(l.ETAPA || '').toLowerCase() === translateStage('Closing').toLowerCase()).length;
   
   const recentLeads = [...leads]
     .sort((a, b) => {
@@ -53,14 +76,15 @@ export default function DashboardPage() {
   };
 
   const opportunities = leads.filter(l => {
-    const stage = l.ETAPA?.toLowerCase() || 'novo';
-    if (stage.includes('agendado') || stage.includes('interesse') || stage.includes('não responde')) return false;
+    const stage = translateStage(l.ETAPA || '').toLowerCase();
+    if (stage.includes('closing')) return false;
 
     const daysSinceLastMessage = Math.abs(getDaysDifference(l.UMSG));
     
-    if (stage.includes('novo')) return true;
-    if (stage.includes('negociando') && daysSinceLastMessage >= 2) return true;
-    if (stage.includes('primeiro contato') && daysSinceLastMessage >= 3) return true;
+    if (stage.includes('new lead')) return true;
+    if (stage.includes('no response') || stage.includes('não responde') || stage.includes('nao responde')) return true;
+    if (stage.includes('initial contact') && daysSinceLastMessage >= 1) return true;
+    if (stage.includes('discovery') && daysSinceLastMessage >= 2) return true;
     return false;
   }).sort((a, b) => Math.abs(getDaysDifference(a.UMSG)) - Math.abs(getDaysDifference(b.UMSG))).slice(0, 4);
 
@@ -108,64 +132,161 @@ export default function DashboardPage() {
         animate="show"
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
       >
-        <motion.div variants={itemVariants} className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-sm">
+        <motion.div 
+          variants={itemVariants} 
+          whileHover={{ y: -4, scale: 1.01 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className="bg-white p-5 rounded-2xl border border-zinc-350 shadow-sm transition-shadow hover:shadow-md"
+        >
           <div className="flex justify-between items-start mb-4">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Users size={20} />
+            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+              <Users size={18} />
             </div>
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t('db.total_leads')}</span>
+            <span className="text-xs font-black text-zinc-800 uppercase tracking-wider">{t('db.total_leads')}</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <h3 className="text-3xl font-bold text-zinc-900">{totalLeads}</h3>
-            <span className="text-sm font-medium text-emerald-600 flex items-center"><TrendingUp size={14} className="mr-1"/> {t('db.active')}</span>
+            <h3 className="text-3xl font-black text-zinc-950 tracking-tight">{totalLeads}</h3>
+            <span className="text-xs font-extrabold text-emerald-850 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-300 flex items-center shrink-0">
+              <TrendingUp size={12} className="mr-1 shadow-xs"/> {t('db.active')}
+            </span>
           </div>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+        <motion.div 
+          variants={itemVariants} 
+          whileHover={{ y: -4, scale: 1.01 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className="bg-white p-5 rounded-2xl border border-zinc-350 shadow-sm relative overflow-hidden transition-shadow hover:shadow-md"
+        >
+          <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none">
             <Inbox size={80} />
           </div>
           <div className="flex justify-between items-start mb-4 relative z-10">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Activity size={20} />
+            <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-md shadow-amber-500/20">
+              <Activity size={18} />
             </div>
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Novos Leads</span>
+            <span className="text-xs font-black text-zinc-800 uppercase tracking-wider">New Leads</span>
           </div>
           <div className="flex items-baseline gap-2 relative z-10">
-            <h3 className="text-3xl font-bold text-zinc-900">{newLeadsCount}</h3>
-            <span className="text-sm font-medium text-zinc-500">{t('db.inbox')}</span>
+            <h3 className="text-3xl font-black text-zinc-950 tracking-tight">{newLeadsCount}</h3>
+            <span className="text-xs font-extrabold text-zinc-800 bg-zinc-100 px-2.5 py-1 rounded-full border border-zinc-300 uppercase tracking-wide">
+              {t('db.inbox')}
+            </span>
           </div>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+        <motion.div 
+          variants={itemVariants} 
+          whileHover={{ y: -4, scale: 1.01 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className="bg-white p-5 rounded-2xl border border-zinc-350 shadow-sm relative overflow-hidden transition-shadow hover:shadow-md"
+        >
+          <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none">
             <CheckCircle size={80} />
           </div>
           <div className="flex justify-between items-start mb-4 relative z-10">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <CheckCircle size={20} />
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
+              <CheckCircle size={18} />
             </div>
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Agendados</span>
+            <span className="text-xs font-black text-zinc-800 uppercase tracking-wider">Closing Deals</span>
           </div>
           <div className="flex items-baseline gap-2 relative z-10">
-            <h3 className="text-3xl font-bold text-zinc-900">{scheduledCount}</h3>
-            <span className="text-sm font-medium text-zinc-500">{t('db.converted')}</span>
+            <h3 className="text-3xl font-black text-zinc-950 tracking-tight">{closingCount}</h3>
+            <span className="text-xs font-extrabold text-zinc-800 bg-zinc-100 px-2.5 py-1 rounded-full border border-zinc-300 uppercase tracking-wide">
+              {t('db.converted')}
+            </span>
           </div>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-sm">
+        <motion.div 
+          variants={itemVariants} 
+          whileHover={{ y: -4, scale: 1.01 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className="bg-white p-5 rounded-2xl border border-zinc-350 shadow-sm transition-shadow hover:shadow-md"
+        >
           <div className="flex justify-between items-start mb-4">
-            <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
-              <FileText size={20} />
+            <div className="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-md shadow-sky-500/20">
+              <FileText size={18} />
             </div>
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t('nav.quotes')}</span>
+            <span className="text-xs font-black text-zinc-800 uppercase tracking-wider">{t('nav.quotes')}</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <h3 className="text-3xl font-bold text-zinc-900">{savedQuotes.length}</h3>
-            <span className="text-sm font-medium text-zinc-500">{t('db.generated')}</span>
+            <h3 className="text-3xl font-black text-zinc-950 tracking-tight">{savedQuotes.length}</h3>
+            <span className="text-xs font-extrabold text-zinc-800 bg-zinc-100 px-2.5 py-1 rounded-full border border-zinc-300 uppercase tracking-wide">
+              {t('db.generated')}
+            </span>
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Session Navigation History Logs */}
+      {visitedLeads.length > 0 && (
+        <motion.div 
+          variants={itemVariants}
+          className="bg-zinc-950 text-white rounded-2xl p-6 border border-zinc-800 shadow-xl relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-4 opacity-[0.02] pointer-events-none">
+            <Users size={160} />
+          </div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400">
+                  {language === 'en' ? 'Active Sales Cockpit' : 'Últimos Leads que você mexeu'}
+                </h2>
+              </div>
+              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                {language === 'en' ? 'Quick Access Log' : 'Seu Histórico de Navegação'}
+              </span>
+            </div>
+            <p className="text-xs text-zinc-400 mb-5 max-w-2xl font-medium">
+              {language === 'en' 
+                ? 'These are the last leads you worked on in this browser session. Hover and click to instantly jump back into your consultative script.' 
+                : 'Estes foram os últimos leads visualizados ou editados no seu CRM neste navegador. Clique para retornar ao atendimento instantaneamente.'}
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {visitedLeads.slice(0, 4).map(lead => (
+                <Link 
+                  href={`/leads/${lead.id}`} 
+                  key={lead.id} 
+                  className="bg-zinc-900 hover:bg-zinc-850 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all group flex flex-col justify-between cursor-pointer relative"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-[8px] uppercase font-black px-2 py-0.5 rounded tracking-wide ${
+                        lead.ETAPA?.toLowerCase().includes('novo') ? 'bg-emerald-950 text-emerald-400 border border-emerald-900/40' : 
+                        lead.ETAPA?.toLowerCase().includes('agendado') ? 'bg-sky-950 text-sky-400 border border-sky-900/40' :
+                        lead.ETAPA?.toLowerCase().includes('negociando') ? 'bg-amber-950 text-amber-400 border border-amber-900/40' :
+                        'bg-zinc-800 text-zinc-300'
+                      }`}>
+                        {translateStage(lead.ETAPA || 'Novo')}
+                      </span>
+                      <span className="text-[9px] font-semibold text-zinc-500 font-mono">
+                        {lead.Quartos || '0'}Q / {lead.Banheiros || '0'}B
+                      </span>
+                    </div>
+                    <p className="font-extrabold text-sm text-zinc-100 group-hover:text-amber-400 transition-colors truncate">
+                      {lead.Nome || 'Cliente sem nome'}
+                    </p>
+                    <p className="text-[10px] text-zinc-400 truncate">
+                      {lead.Cidade || 'Sem cidade definida'}
+                    </p>
+                  </div>
+                  <div className="text-zinc-500 group-hover:text-amber-400 font-bold text-[10px] uppercase tracking-wider flex items-center mt-4 gap-1 transition-colors">
+                    {language === 'en' ? 'Resume Script' : 'Voltar ao Lead'} 
+                    <ArrowRight size={10} className="transform group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Reminders Widget */}
       {reminders.length > 0 && (
@@ -177,9 +298,9 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2 mb-4">
               <Bell className="text-emerald-600" size={20} />
               <h2 className="text-lg font-bold text-emerald-900">{t('db.reminders')}</h2>
-              <span className="ml-2 bg-emerald-200 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">{reminders.length} Pendentes</span>
+              <span className="ml-2 bg-emerald-200 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">{reminders.length} Pending</span>
             </div>
-            <p className="text-sm text-emerald-700 mb-6">Contatos e follow-ups agendados baseados nos seus lembretes.</p>
+            <p className="text-sm text-emerald-700 mb-6">Scheduled contacts and follow-ups based on your reminders.</p>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {reminders.map(lead => {
@@ -223,9 +344,9 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2 mb-4">
               <Activity className="text-sky-600" size={20} />
               <h2 className="text-lg font-bold text-sky-900">{t('db.assistant')}</h2>
-              <span className="ml-2 bg-sky-200 text-sky-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Oportunidades</span>
+              <span className="ml-2 bg-sky-200 text-sky-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Opportunities</span>
             </div>
-            <p className="text-sm text-sky-700 mb-6">Estes leads precisam da sua atenção hoje para não esfriarem.</p>
+            <p className="text-sm text-sky-700 mb-6">These leads need your attention today before they go cold.</p>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {opportunities.map(lead => {

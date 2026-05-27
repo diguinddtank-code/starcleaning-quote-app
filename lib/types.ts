@@ -1,7 +1,28 @@
 export type ServiceType = 'residential' | 'deep' | 'move' | 'vacation' | 'commercial' | 'construction';
 export type ServiceFrequency = 'one-time' | 'weekly' | 'bi-weekly' | 'monthly';
 
+export interface PricingTierDetails {
+  beds: number;
+  baths: number;
+  deep: { min: number; max: number };
+  moveInOut: { min: number; max: number };
+  general: { min: number; max: number };
+}
+
+export interface PricingTier {
+  sqftLabel: string;
+  minSqft: number;
+  maxSqft: number;
+  recurring: {
+    weekly: { min: number; max: number };
+    biWeekly: { min: number; max: number };
+    monthly: { min: number; max: number };
+  };
+  details: PricingTierDetails[];
+}
+
 export interface PricingSettings {
+  pricingTiers?: PricingTier[];
   basePrice: number;
   pricePerSqFt: number;
   bedPrice: number;
@@ -47,6 +68,7 @@ export interface Lead {
   FOLLOWUP?: string;
   UMSG?: string;
   REMINDER_DATE?: string;
+  converted_at?: string;
   created_by_email?: string;
 }
 
