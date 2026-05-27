@@ -776,16 +776,18 @@ export function LeadDetailClient({ id }: { id: string }) {
                   
                   {/* Values Row */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200 shadow-2xs">
-                      <h4 className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1">Data de Criação</h4>
-                      <p className="text-sm font-semibold text-zinc-800">
-                        {lead.Data ? new Date(lead.Data).toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR', { dateStyle: 'medium' }) : '--'}
+                    <div className="p-4 bg-zinc-50/80 rounded-2xl border border-zinc-200 shadow-3xs">
+                      <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1.5 font-sans">Data de Criação</h4>
+                      <p className="text-sm font-semibold text-zinc-800 font-sans">
+                        {lead.Data || lead.created_at 
+                          ? new Date(lead.Data || lead.created_at!).toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR', { dateStyle: 'medium' }) 
+                          : '--'}
                       </p>
                     </div>
-                    <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-2xs">
-                      <h4 className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">Valor Estimado</h4>
-                      <div className="text-base font-black text-emerald-700">
-                        ${lead.Inicial || '0'} {lead.Final ? `- $${lead.Final}` : ''}
+                    <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-3xs">
+                      <h4 className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1.5 font-sans">Valor Estimado</h4>
+                      <div className="text-lg font-black text-emerald-700 tracking-tight font-sans">
+                        ${lead.Inicial || '0'}
                       </div>
                     </div>
                   </div>
@@ -941,14 +943,14 @@ export function LeadDetailClient({ id }: { id: string }) {
               {/* Console Header */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-zinc-200">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600 border border-sky-100 shadow-xs">
-                    <Sparkles size={18} />
+                  <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center border border-sky-100 shadow-xs">
+                    <Phone size={18} className="text-sky-600" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black tracking-widest text-zinc-800 uppercase flex items-center gap-1.5 leading-none">
-                      Console de Vendas de Alta Conversão <span className="bg-sky-50 text-sky-700 border border-sky-100 font-extrabold text-[8px] px-1.5 py-0.5 rounded uppercase tracking-widest">Premium</span>
+                    <h3 className="text-base font-extrabold text-zinc-900 tracking-tight flex items-center gap-2 leading-none">
+                      Console de Vendas <span className="bg-sky-50 text-sky-700 border border-sky-100 text-[10px] font-extrabold px-2 py-0.5 rounded tracking-wide uppercase">Script Ativo</span>
                     </h3>
-                    <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider mt-1">Gatilhos mentais guiados e quebra de objeções em tempo real</p>
+                    <p className="text-xs text-zinc-500 font-normal mt-1.5">Roteiro persuasivo e quebra de objeções estruturada para fechamento</p>
                   </div>
                 </div>
 
@@ -957,24 +959,24 @@ export function LeadDetailClient({ id }: { id: string }) {
                   <button
                     type="button"
                     onClick={() => setSalesTab('script')}
-                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider cursor-pointer transition-all ${
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
                       salesTab === 'script' 
                         ? 'bg-sky-600 text-white shadow-sm' 
-                        : 'text-zinc-600 hover:text-zinc-900 font-black'
+                        : 'text-zinc-650 hover:text-zinc-900'
                     }`}
                   >
-                    <Phone size={10} /> Script de Chamada
+                    <Phone size={12} /> Script de Chamada
                   </button>
                   <button
                     type="button"
                     onClick={() => setSalesTab('triggers')}
-                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider cursor-pointer transition-all ${
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
                       salesTab === 'triggers' 
                         ? 'bg-emerald-600 text-white shadow-sm' 
-                        : 'text-zinc-600 hover:text-zinc-900 font-black'
+                        : 'text-zinc-650 hover:text-zinc-900'
                     }`}
                   >
-                    <MessageCircle size={10} /> {language === 'en' ? 'Text Message Triggers' : 'Gatilhos de Text Message'}
+                    <MessageCircle size={12} /> {language === 'en' ? 'Text Message Triggers' : 'Gatilhos de Mensagem'}
                   </button>
                 </div>
               </div>
@@ -1013,14 +1015,14 @@ export function LeadDetailClient({ id }: { id: string }) {
                     {/* Active Step Info header */}
                     <div className="flex justify-between items-start gap-4">
                       <div>
-                        <span className="text-[8px] font-extrabold text-sky-700 uppercase tracking-widest bg-sky-50 border border-sky-100 px-2 py-0.5 rounded">
+                        <span className="text-[10px] font-bold text-sky-750 uppercase tracking-wider bg-sky-50 border border-sky-100 px-2.5 py-0.5 rounded">
                           {scriptStepsData[currentScriptStep - 1].badge}
                         </span>
-                        <h4 className="text-xs font-black text-zinc-800 mt-1.5 uppercase tracking-tight font-sans">
+                        <h4 className="text-sm font-extrabold text-zinc-900 mt-2 tracking-tight font-sans">
                           {scriptStepsData[currentScriptStep - 1].title}
                         </h4>
                       </div>
-                      <p className="text-[9px] text-zinc-400 font-extrabold text-right uppercase tracking-wider">
+                      <p className="text-xs font-medium text-zinc-400 font-sans">
                         Passo {currentScriptStep} de 9
                       </p>
                     </div>
@@ -1054,8 +1056,8 @@ export function LeadDetailClient({ id }: { id: string }) {
                         <AlertTriangle size={14} />
                       </div>
                       <div>
-                        <span className="text-[8px] font-black uppercase text-amber-700 tracking-widest block font-sans">Instrução ao Operador</span>
-                        <p className="text-[11px] text-amber-900 font-semibold leading-relaxed mt-0.5">
+                        <span className="text-[10px] font-bold uppercase text-amber-750 tracking-wider block font-sans">Instrução ao Operador</span>
+                        <p className="text-xs text-amber-955 font-medium leading-relaxed mt-1">
                           {scriptStepsData[currentScriptStep - 1].hint}
                         </p>
                       </div>
@@ -1064,8 +1066,8 @@ export function LeadDetailClient({ id }: { id: string }) {
                     {/* Step specific interactive actions (e.g. Discovery checks on Steps 2 & 3) */}
                     {scriptStepsData[currentScriptStep - 1].checkboxes && scriptStepsData[currentScriptStep - 1].checkboxes.length > 0 && (
                       <div className="pt-3 border-t border-zinc-200 space-y-3">
-                        <span className="text-[9px] font-black uppercase text-sky-600 tracking-widest block">
-                          {currentScriptStep === 2 ? '🔍 Mapear Dores Mencionadas' : '🎯 Mapear Desejos Demonstados'}
+                        <span className="text-[10px] font-bold uppercase text-sky-600 tracking-wider block">
+                          {currentScriptStep === 2 ? '🔍 Mapear Dores Mencionadas' : '🎯 Mapear Desejos Demonstrados'}
                         </span>
                         
                         <div className="grid grid-cols-2 gap-2">
@@ -1094,10 +1096,10 @@ export function LeadDetailClient({ id }: { id: string }) {
                                     applyDiscoveryToObservations(loggedPains, nextGoals);
                                   }
                                 }}
-                                className={`flex items-center gap-2 py-2 px-3 rounded-xl border text-left text-[11px] font-semibold tracking-tight transition-all cursor-pointer ${
+                                className={`flex items-center gap-2 py-2.5 px-3.5 rounded-xl border text-left text-xs font-semibold tracking-tight transition-all cursor-pointer ${
                                   isChecked 
-                                    ? 'bg-sky-50 text-sky-700 border-sky-300 shadow-[0_2px_8px_rgba(14,165,233,0.08)]' 
-                                    : 'bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300'
+                                    ? 'bg-sky-50 text-sky-700 border-sky-305 shadow-[0_2px_8px_rgba(14,165,233,0.08)]' 
+                                    : 'bg-white text-zinc-650 border border-zinc-200 hover:border-zinc-300'
                                 }`}
                               >
                                 <span className={`w-3.5 h-3.5 rounded-md border flex items-center justify-center text-[8px] font-extrabold shrink-0 ${
@@ -1115,15 +1117,15 @@ export function LeadDetailClient({ id }: { id: string }) {
 
                         {/* Save discoveries tool */}
                         <div className="flex justify-between items-center pt-2">
-                          <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1.5">
+                          <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            {language === 'en' ? 'Auto-synced with Cloud' : 'Sincronizado na nuvem em tempo real'}
+                            {language === 'en' ? 'Auto-synced with Cloud' : 'Sincronizado em tempo real'}
                           </span>
                           <button
                             type="button"
                             onClick={() => applyDiscoveryToObservations()}
                             disabled={isSaving}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-zinc-50 text-zinc-700 hover:text-zinc-900 text-[10px] font-black uppercase tracking-wider rounded-xl border border-zinc-200 hover:border-zinc-300 shadow-2xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-zinc-50 text-zinc-750 text-xs font-semibold rounded-xl border border-zinc-200 hover:border-zinc-300 shadow-2xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Save size={11} className="text-zinc-500" /> {language === 'en' ? 'Force Sync' : 'Re-Sincronizar'}
                           </button>
@@ -1138,7 +1140,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                       type="button"
                       disabled={currentScriptStep === 1}
                       onClick={() => setCurrentScriptStep(prev => prev - 1)}
-                      className="px-4 py-2 bg-white border border-zinc-300 hover:border-zinc-400 hover:bg-zinc-100 text-zinc-700 hover:text-zinc-950 text-2xs font-black uppercase tracking-widest rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-2xs cursor-pointer"
+                      className="px-4 py-2 bg-white border border-zinc-200 hover:border-zinc-350 hover:bg-zinc-50 text-zinc-700 hover:text-zinc-900 text-xs font-semibold rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-3xs cursor-pointer"
                     >
                       Voltar Passo
                     </button>
@@ -1146,7 +1148,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                       type="button"
                       disabled={currentScriptStep === 9}
                       onClick={() => setCurrentScriptStep(prev => prev + 1)}
-                      className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white text-2xs font-bold uppercase tracking-widest rounded-xl shadow-md shadow-sky-500/10 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
+                      className="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5 cursor-pointer"
                     >
                       Avançar Script <ChevronRight size={12} strokeWidth={2.5} />
                     </button>
@@ -1154,8 +1156,8 @@ export function LeadDetailClient({ id }: { id: string }) {
 
                   {/* SUB SECTOR: INTERACTIVE OBJECTIONS HARVESTER */}
                   <div className="border-t border-zinc-200 pt-5 space-y-3">
-                    <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-1.5 pb-1">
-                      <Shield size={12} className="text-sky-500 animate-pulse" /> Refratário de Objeções (Como quebrar na chamada)
+                    <h4 className="text-xs font-bold text-zinc-500 flex items-center gap-1.5 pb-1 uppercase tracking-wider">
+                      <Shield size={13} className="text-sky-600 animate-pulse" /> Refratário de Objeções (Como quebrar na chamada)
                     </h4>
                     
                     <div className="flex flex-wrap gap-2">
@@ -1166,10 +1168,10 @@ export function LeadDetailClient({ id }: { id: string }) {
                             key={obj.id}
                             type="button"
                             onClick={() => setSelectedObjection(isSelected ? null : obj.id)}
-                            className={`px-3 py-1.5 rounded-xl border text-[10px] font-extrabold tracking-wide uppercase transition-all cursor-pointer shadow-2xs ${
+                            className={`px-3 py-1.5 rounded-xl border text-xs font-semibold tracking-tight transition-all cursor-pointer shadow-3xs ${
                               isSelected 
-                                ? 'bg-sky-500 text-white border-sky-400' 
-                                : 'bg-white text-zinc-600 border border-zinc-200 hover:border-zinc-300 hover:text-zinc-950'
+                                ? 'bg-sky-600 text-white border-sky-600 shadow-xs' 
+                                : 'bg-white text-zinc-700 border-zinc-200 hover:border-zinc-900'
                             }`}
                           >
                             {obj.title.split(': ')[1] || obj.title}
@@ -1186,13 +1188,13 @@ export function LeadDetailClient({ id }: { id: string }) {
                         <div className="bg-zinc-50 border border-zinc-200 p-4 rounded-2xl space-y-4 shadow-2xs relative animate-fadeIn">
                           
                           <div className="flex justify-between items-center pb-2 border-b border-zinc-200">
-                            <span className="text-[9px] font-black uppercase text-sky-700 tracking-widest">
+                            <span className="text-xs font-bold text-sky-700">
                               Quebra: {objItem.title}
                             </span>
                             <button
                               type="button"
                               onClick={() => setSelectedObjection(null)}
-                              className="text-zinc-400 hover:text-zinc-700 text-2xs font-bold uppercase cursor-pointer"
+                              className="text-zinc-400 hover:text-zinc-650 text-xs font-semibold uppercase cursor-pointer"
                             >
                               Fechar
                             </button>
@@ -1200,52 +1202,52 @@ export function LeadDetailClient({ id }: { id: string }) {
 
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
                             {/* Disarm part */}
-                            <div className="bg-white p-3.5 rounded-xl border border-zinc-200 relative group/dis shadow-2xs">
-                              <span className="text-[8px] font-black uppercase text-orange-705 tracking-widest block flex items-center justify-between">
+                            <div className="bg-white p-3.5 rounded-xl border border-zinc-200 relative group/dis shadow-3xs">
+                              <span className="text-[10px] font-bold uppercase text-orange-600 tracking-wider block flex items-center justify-between">
                                 <span>1. Desarmar Objeção</span>
                                 <button
                                   type="button"
                                   onClick={() => handleCopyText(objItem.reframe.disarm)}
                                   className="opacity-0 group-hover/dis:opacity-100 transition-opacity p-0.5 hover:text-sky-600 cursor-pointer"
                                 >
-                                  <Copy size={9} />
+                                  <Copy size={10} />
                                 </button>
                               </span>
-                              <p className="text-[11px] text-zinc-650 font-semibold italic leading-relaxed whitespace-pre-wrap mt-1">
+                              <p className="text-xs text-zinc-650 italic leading-relaxed whitespace-pre-wrap mt-1.5">
                                 &quot;{objItem.reframe.disarm}&quot;
                               </p>
                             </div>
 
                             {/* Pivot part */}
-                            <div className="bg-white p-3.5 rounded-xl border border-zinc-200 relative group/piv shadow-2xs">
-                              <span className="text-[8px] font-black uppercase text-sky-600 tracking-widest block flex items-center justify-between">
+                            <div className="bg-white p-3.5 rounded-xl border border-zinc-200 relative group/piv shadow-3xs">
+                              <span className="text-[10px] font-bold uppercase text-sky-600 tracking-wider block flex items-center justify-between">
                                 <span>2. Pivotar à Autoridade</span>
                                 <button
                                   type="button"
                                   onClick={() => handleCopyText(objItem.reframe.pivot)}
                                   className="opacity-0 group-hover/piv:opacity-100 transition-opacity p-0.5 hover:text-sky-600 cursor-pointer"
                                 >
-                                  <Copy size={9} />
+                                  <Copy size={10} />
                                 </button>
                               </span>
-                              <p className="text-[11px] text-zinc-650 font-semibold italic leading-relaxed whitespace-pre-wrap mt-1">
+                              <p className="text-xs text-zinc-650 italic leading-relaxed whitespace-pre-wrap mt-1.5">
                                 &quot;{objItem.reframe.pivot}&quot;
                               </p>
                             </div>
 
                             {/* Close part */}
-                            <div className="bg-sky-50/30 p-3.5 rounded-xl border border-sky-100 relative group/clo shadow-2xs">
-                              <span className="text-[8px] font-black uppercase text-emerald-600 tracking-widest block flex items-center justify-between">
+                            <div className="bg-sky-50/30 p-3.5 rounded-xl border border-sky-100 relative group/clo shadow-3xs">
+                              <span className="text-[10px] font-bold uppercase text-emerald-600 tracking-wider block flex items-center justify-between">
                                 <span>3. Chamar Fechamento</span>
                                 <button
                                   type="button"
                                   onClick={() => handleCopyText(objItem.reframe.close)}
                                   className="opacity-0 group-hover/clo:opacity-100 transition-opacity p-0.5 hover:text-emerald-600 cursor-pointer"
                                 >
-                                  <Copy size={9} />
+                                  <Copy size={10} />
                                 </button>
                               </span>
-                              <p className="text-[11px] text-zinc-950 font-black italic leading-relaxed whitespace-pre-wrap mt-1">
+                              <p className="text-xs text-zinc-900 font-semibold italic leading-relaxed whitespace-pre-wrap mt-1.5">
                                 &quot;{objItem.reframe.close}&quot;
                               </p>
                             </div>
@@ -1268,10 +1270,10 @@ export function LeadDetailClient({ id }: { id: string }) {
                         key={tab}
                         type="button"
                         onClick={() => setActivePlaybookTab(tab)}
-                        className={`flex-1 text-center py-2 px-3 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer transition-all whitespace-nowrap ${
+                        className={`flex-1 text-center py-2 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all whitespace-nowrap ${
                           activePlaybookTab === tab 
-                            ? 'bg-orange-500 text-white shadow-xs' 
-                            : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100'
+                            ? 'bg-orange-550 text-white shadow-xs' 
+                            : 'text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100'
                         }`}
                       >
                         {tab === 'scarcity' && '🔥 Escassez'}
@@ -1284,22 +1286,22 @@ export function LeadDetailClient({ id }: { id: string }) {
 
                   {/* Playbook Description box */}
                   <div className="mt-5 space-y-4">
-                    <div className="flex justify-between items-center bg-zinc-50 p-4 rounded-xl border border-zinc-200 shadow-2xs">
+                    <div className="flex justify-between items-center bg-zinc-50 p-4 rounded-xl border border-zinc-200 shadow-3xs">
                       <div>
-                        <span className="text-[8px] font-black uppercase text-orange-700 tracking-widest">{playbooks[activePlaybookTab].badge}</span>
-                        <h4 className="text-[11px] font-black text-zinc-800 tracking-wide mt-0.5 uppercase">{playbooks[activePlaybookTab].title}</h4>
+                        <span className="text-[10px] font-bold uppercase text-orange-700 tracking-wider block">{playbooks[activePlaybookTab].badge}</span>
+                        <h4 className="text-sm font-bold text-zinc-900 tracking-tight mt-1">{playbooks[activePlaybookTab].title}</h4>
                       </div>
-                      <p className="text-[10px] text-zinc-500 font-semibold max-w-[280px] text-right uppercase tracking-wider">{playbooks[activePlaybookTab].description}</p>
+                      <p className="text-xs text-zinc-500 font-medium max-w-[280px] text-right">{playbooks[activePlaybookTab].description}</p>
                     </div>
 
                     {/* Persuasive copy content area */}
                     <div className="relative">
-                      <pre className="p-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-[11px] text-zinc-700 font-mono leading-relaxed whitespace-pre-wrap select-text h-44 overflow-y-auto w-full custom-scrollbar shadow-inner">
+                      <pre className="p-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs text-zinc-700 font-mono leading-relaxed whitespace-pre-wrap select-text h-44 overflow-y-auto w-full custom-scrollbar shadow-inner">
                         {activePlaybookText}
                       </pre>
                       
                       {copiedText && (
-                        <div className="absolute top-3 right-3 bg-emerald-500 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-md shadow-lg animate-bounce">
+                        <div className="absolute top-3 right-3 bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-md shadow-lg animate-bounce">
                           {copiedText}
                         </div>
                       )}
@@ -1310,7 +1312,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                       <button
                         type="button"
                         onClick={() => handleCopyText(activePlaybookText)}
-                        className="w-full flex justify-center items-center gap-2 px-4 py-3.5 bg-white hover:bg-zinc-100 text-zinc-800 hover:text-zinc-950 text-xs font-bold uppercase tracking-wider rounded-xl border border-zinc-200 shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                        className="w-full flex justify-center items-center gap-2 px-4 py-3 bg-white hover:bg-zinc-50 text-zinc-800 text-xs font-semibold rounded-xl border border-zinc-250 shadow-3xs transition-all active:scale-[0.98] cursor-pointer"
                       >
                         <Copy size={13} className="text-zinc-500" /> {language === 'en' ? 'Copy Text to Clipboard' : 'Copiar Texto para Área de Transferência'}
                       </button>
