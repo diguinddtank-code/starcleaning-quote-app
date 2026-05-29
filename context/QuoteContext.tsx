@@ -22,7 +22,7 @@ const defaultQuote: QuoteState = {
   baths: 2,
   halfBaths: 0,
   bedsToChange: 0,
-  serviceType: 'residential',
+  serviceType: 'deep',
   frequency: 'one-time',
   selectedExtras: [],
 };
@@ -159,14 +159,18 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
       else if (quote.frequency === 'monthly') total *= settings.monthlyMultiplier;
     }
 
-    // Bed changing logic: 1st bed is free!
-    if (quote.bedsToChange && quote.bedsToChange > 1) {
-      total += (quote.bedsToChange - 1) * (settings.extras?.bedChange || 10);
+    // Sheet changing logic (Extra): 1st bed is free, $10 per additional bed
+    if (quote.selectedExtras.includes('sheetChange')) {
+      const additionalBeds = Math.max(0, quote.beds - 1);
+      if (additionalBeds > 0) {
+        // Fallback to 10 if not defined in settings
+        total += additionalBeds * (settings.extras?.sheetChange || 10);
+      }
     }
 
     quote.selectedExtras.forEach((extra) => {
-      if (extra in settings.extras) {
-        total += settings.extras[extra as keyof typeof settings.extras];
+      if (extra !== 'sheetChange' && extra in settings.extras) {
+        total += settings.extras[extra as keyof typeof settings.extras] || 0;
       }
     });
 

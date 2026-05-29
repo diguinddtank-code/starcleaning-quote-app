@@ -131,6 +131,81 @@ const getStageConfig = (stageName: string) => {
   };
 };
 
+const matchTimeFilter = (l: Lead, filter: string, customStart?: string, customEnd?: string) => {
+  if (filter === 'all') return true;
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+  const yesterdayEnd = new Date(todayEnd.getTime() - 24 * 60 * 60 * 1000);
+
+  const dateCandidates: Date[] = [];
+  
+  if (l.created_at) {
+    const d = new Date(l.created_at);
+    if (!isNaN(d.getTime())) dateCandidates.push(d);
+  }
+  if (l.updated_at) {
+    const d = new Date(l.updated_at);
+    if (!isNaN(d.getTime())) dateCandidates.push(d);
+  }
+  if (l.UMSG) {
+    const d = new Date(l.UMSG);
+    if (!isNaN(d.getTime())) dateCandidates.push(d);
+  }
+  if (l.Data) {
+    const d = new Date(l.Data);
+    if (!isNaN(d.getTime())) dateCandidates.push(d);
+  }
+
+  if (dateCandidates.length === 0) {
+    return false;
+  }
+
+  return dateCandidates.some(d => {
+    if (filter === 'custom') {
+      const start = customStart ? new Date(customStart + 'T00:00:00') : null;
+      const end = customEnd ? new Date(customEnd + 'T23:59:59') : null;
+      const hasStart = start && !isNaN(start.getTime());
+      const hasEnd = end && !isNaN(end.getTime());
+
+      if (hasStart && hasEnd) {
+        return d >= start && d <= end;
+      } else if (hasStart) {
+        return d >= start;
+      } else if (hasEnd) {
+        return d <= end;
+      }
+      return true;
+    }
+    if (filter === 'today') {
+      return d >= todayStart && d <= todayEnd;
+    }
+    if (filter === 'yesterday') {
+      return d >= yesterdayStart && d <= yesterdayEnd;
+    }
+    if (filter === 'week') {
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return d >= sevenDaysAgo;
+    }
+    if (filter === 'month') {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      return d >= startOfMonth;
+    }
+    if (filter === 'last_month') {
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      return d >= startOfLastMonth && d <= endOfLastMonth;
+    }
+    if (filter === '90days') {
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      return d >= ninetyDaysAgo;
+    }
+    return true;
+  });
+};
+
 export default function LeadsPage() {
   const { leads, deleteLead, updateLead, addLead } = useLead();
   const { language, t, translateStage } = useLanguage();
@@ -138,6 +213,9 @@ export default function LeadsPage() {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [kpiTimeRange, setKpiTimeRange] = useState<'all' | 'today' | 'yesterday' | 'week' | 'month' | 'last_month' | '90days' | 'custom'>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
   const [sortOrder, setSortOrder] = useState<'default' | 'asc' | 'desc'>('default');
 
   // Batch/Lote Action States
@@ -376,9 +454,14 @@ export default function LeadsPage() {
     ));
   }, [leads, debouncedQuery]);
 
+  // Refined: Apply the selected period filter on top of the search results
+  const timeFilteredLeads = useMemo(() => {
+    return searchedLeads.filter(l => matchTimeFilter(l, kpiTimeRange, customStartDate, customEndDate));
+  }, [searchedLeads, kpiTimeRange, customStartDate, customEndDate]);
+
   // Memoize filtered and sorted leads
   const filteredLeads = useMemo(() => {
-    return searchedLeads
+    return timeFilteredLeads
       .filter(l => {
         if (statusFilter !== 'ALL' && getKanbanStage(l.ETAPA) !== statusFilter) return false;
         return true;
@@ -402,7 +485,7 @@ export default function LeadsPage() {
         return timeB - timeA;
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchedLeads, statusFilter, sortOrder]);
+  }, [timeFilteredLeads, statusFilter, sortOrder]);
 
   const handleStatusChange = async (leadId: string, newStatus: string) => {
     await updateLead(leadId, { ETAPA: newStatus });
@@ -452,36 +535,9 @@ export default function LeadsPage() {
     return acc;
   }, {} as Record<string, Lead[]>);
 
-  const [kpiTimeRange, setKpiTimeRange] = useState<'all' | 'week' | 'month' | 'last_month' | '90days'>('all');
-
   const filteredKPILeads = useMemo(() => {
-    const now = new Date();
-    return leads.filter(l => {
-      const dateStr = l.created_at || l.updated_at;
-      if (!dateStr) return kpiTimeRange === 'all';
-      const leadDate = new Date(dateStr);
-      if (isNaN(leadDate.getTime())) return kpiTimeRange === 'all';
-
-      if (kpiTimeRange === 'week') {
-        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return leadDate >= oneWeekAgo;
-      }
-      if (kpiTimeRange === 'month') {
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        return leadDate >= startOfMonth;
-      }
-      if (kpiTimeRange === 'last_month') {
-        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-        return leadDate >= startOfLastMonth && leadDate <= endOfLastMonth;
-      }
-      if (kpiTimeRange === '90days') {
-        const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-        return leadDate >= ninetyDaysAgo;
-      }
-      return true; // 'all'
-    });
-  }, [leads, kpiTimeRange]);
+    return leads.filter(l => matchTimeFilter(l, kpiTimeRange, customStartDate, customEndDate));
+  }, [leads, kpiTimeRange, customStartDate, customEndDate]);
 
   const totalLeads = filteredKPILeads.length;
   const newLeadsCount = filteredKPILeads.filter(l => getKanbanStage(l.ETAPA) === t('stage.novo')).length;
@@ -509,21 +565,63 @@ export default function LeadsPage() {
           </div>
           
           <div className="flex flex-col items-stretch md:items-end gap-2.5">
-            {/* KPI Time Filter Selector */}
-            <div className="flex items-center justify-end gap-2 self-end">
-              <span className="text-[11px] uppercase tracking-wider text-zinc-750 font-black whitespace-nowrap">Filtrar KPIs:</span>
-              <select
-                value={kpiTimeRange}
-                onChange={(e) => setKpiTimeRange(e.target.value as any)}
-                className="bg-white border border-zinc-350 hover:border-zinc-500 text-zinc-950 text-xs font-black rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer shadow-2xs transition-all pr-6 max-w-xs"
-                style={{ backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22currentColor%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem top 50%', backgroundSize: '0.6rem auto' }}
-              >
-                <option value="all">{language === 'en' ? 'All Time' : 'Todo o Período'}</option>
-                <option value="week">{language === 'en' ? 'Last 7 Days' : 'Últimos 7 dias'}</option>
-                <option value="month">{language === 'en' ? 'This Month' : 'Este Mês'}</option>
-                <option value="last_month">{language === 'en' ? 'Last Month' : 'Mês Passado'}</option>
-                <option value="90days">{language === 'en' ? 'Last 90 Days' : 'Últimos 90 dias'}</option>
-              </select>
+            {/* KPI & CRM Time Filter Selector */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 bg-zinc-50 border border-zinc-200 rounded-2xl p-1.5 shadow-3xs transition-all duration-300 hover:shadow-2xs hover:border-zinc-300/90 self-end max-w-full">
+              <div className="flex items-center justify-between sm:justify-start gap-2 px-1">
+                <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold whitespace-nowrap">{language === 'en' ? 'Period:' : 'Período:'}</span>
+                <select
+                  value={kpiTimeRange}
+                  onChange={(e) => setKpiTimeRange(e.target.value as any)}
+                  className="bg-white border border-zinc-250 hover:border-zinc-350 text-zinc-900 text-xs font-black rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/15 cursor-pointer shadow-3xs transition-all pr-6 max-w-xs appearance-none"
+                  style={{ backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22currentColor%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem top 50%', backgroundSize: '0.6rem auto' }}
+                >
+                  <option value="all">{language === 'en' ? 'All Time' : 'Todo o Período'}</option>
+                  <option value="today">{language === 'en' ? 'Today' : 'Hoje'}</option>
+                  <option value="yesterday">{language === 'en' ? 'Yesterday' : 'Ontem'}</option>
+                  <option value="week">{language === 'en' ? 'Last 7 Days' : 'Últimos 7 dias'}</option>
+                  <option value="month">{language === 'en' ? 'This Month' : 'Este Mês'}</option>
+                  <option value="last_month">{language === 'en' ? 'Last Month' : 'Mês Passado'}</option>
+                  <option value="90days">{language === 'en' ? 'Last 90 Days' : 'Últimos 90 dias'}</option>
+                  <option value="custom">{language === 'en' ? 'Custom Filter' : 'Período Personalizado'}</option>
+                </select>
+              </div>
+
+              <div className="hidden sm:block h-5 w-px bg-zinc-200"></div>
+
+              <div className={`flex items-center justify-between sm:justify-start gap-1.5 px-2 py-1 rounded-xl transition-all duration-300 ${kpiTimeRange === 'custom' ? 'bg-emerald-500/5 ring-1 ring-emerald-500/10' : ''}`}>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => {
+                    setCustomStartDate(e.target.value);
+                    setKpiTimeRange('custom');
+                  }}
+                  className={`bg-white border rounded-lg px-2 py-1 text-[11px] font-bold text-zinc-950 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer shadow-3xs transition-all ${kpiTimeRange === 'custom' ? 'border-emerald-500/30' : 'border-zinc-250 hover:border-zinc-350'}`}
+                />
+                <span className="text-[10px] text-zinc-400 font-extrabold uppercase tracking-widest px-0.5">{language === 'en' ? 'to' : 'até'}</span>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => {
+                    setCustomEndDate(e.target.value);
+                    setKpiTimeRange('custom');
+                  }}
+                  className={`bg-white border rounded-lg px-2 py-1 text-[11px] font-bold text-zinc-950 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer shadow-3xs transition-all ${kpiTimeRange === 'custom' ? 'border-emerald-500/30' : 'border-zinc-250 hover:border-zinc-350'}`}
+                />
+
+                {(customStartDate || customEndDate) && (
+                  <button
+                    onClick={() => {
+                      setCustomStartDate('');
+                      setCustomEndDate('');
+                      setKpiTimeRange('all');
+                    }}
+                    className="ml-1.5 px-2 py-0.5 bg-zinc-200 hover:bg-zinc-305 text-zinc-600 hover:text-zinc-900 rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                  >
+                    {language === 'en' ? 'Clear' : 'Limpar'}
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3 md:gap-4 w-full md:w-auto">
@@ -551,7 +649,7 @@ export default function LeadsPage() {
                 { id: 'ALL', label: language === 'en' ? 'All' : 'Todos' },
                 ...kanbanColumns.map(stage => ({ id: stage, label: stage }))
               ].map(stage => {
-                const count = stage.id === 'ALL' ? searchedLeads.length : searchedLeads.filter(l => getKanbanStage(l.ETAPA) === stage.id).length;
+                const count = stage.id === 'ALL' ? timeFilteredLeads.length : timeFilteredLeads.filter(l => getKanbanStage(l.ETAPA) === stage.id).length;
                 return (
                 <button
                   key={stage.id}

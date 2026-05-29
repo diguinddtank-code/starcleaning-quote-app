@@ -6,7 +6,7 @@ import { useSettings } from '@/context/SettingsContext';
 import { Stepper } from '@/components/ui/Stepper';
 import { ServiceCard, ExtraCard } from '@/components/ui/Cards';
 import { ServiceType } from '@/lib/types';
-import { Home, Sparkles, Key, Wind, Droplets, Box, WashingMachine, CarFront, FileText, CheckCircle2, Building2, Hammer, Printer, Loader2, BookOpen, ShieldAlert, Copy, MessageCircle, X, Calendar, Send } from 'lucide-react';
+import { Home, Sparkles, Key, Wind, Droplets, Box, WashingMachine, CarFront, FileText, CheckCircle2, Building2, Hammer, Printer, Loader2, BookOpen, ShieldAlert, Copy, MessageCircle, X, Calendar, Send, ChevronDown } from 'lucide-react';
 import { useState, useEffect, Suspense } from 'react';
 import { SavedQuote } from '@/lib/types';
 import { QuoteDocument } from '@/components/QuoteDocument';
@@ -36,6 +36,7 @@ function CalculatorContent() {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showScripts, setShowScripts] = useState(false);
+  const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState(false);
 
   const [isSendingWebhook, setIsSendingWebhook] = useState(false);
   const [webhookSentStatus, setWebhookSentStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -155,8 +156,9 @@ function CalculatorContent() {
     hours += quote.beds * 0.25;
     hours += quote.baths * 0.5;
     hours += quote.halfBaths * 0.25;
-    if (quote.bedsToChange && quote.bedsToChange > 0) {
-      hours += quote.bedsToChange * 0.25; // 15 mins per bed
+    if ((quote.selectedExtras || []).includes('sheetChange')) {
+      const additionalBeds = Math.max(0, quote.beds - 1);
+      hours += additionalBeds * 0.25; // 15 mins per extra bed
     }
 
     let multiplier = 1;
@@ -183,7 +185,7 @@ function CalculatorContent() {
 
   const estimatedHours = calculateDuration();
 
-  const serviceDescriptions: Record<ServiceType, string[]> = {
+  const serviceDescriptions: Partial<Record<ServiceType, string[]>> = {
     residential: ["General dusting & wipe down of surfaces", "Vacuum & mop all accessible floors", "Kitchen counters & exterior of appliances", "Full bathroom sanitization", "Empty small trash bins"],
     deep: ["Everything in Residential, PLUS:", "Baseboards & window sills wiped", "Ceiling fans & light fixtures dusted", "Extra scrubbing in high-traffic bathrooms", "Heavy dusting & cobweb removal"],
     move: ["Everything in Deep Clean, PLUS:", "Inside all empty cabinets and drawers", "Inside all empty closets", "Inside & behind appliances (if moved)"],
@@ -196,7 +198,7 @@ function CalculatorContent() {
     if (type !== 'residential') {
       updateQuote({ serviceType: type, frequency: 'one-time' });
     } else {
-      updateQuote({ serviceType: type });
+      updateQuote({ serviceType: type, frequency: quote.frequency === 'one-time' ? 'weekly' : quote.frequency });
     }
   };
 
@@ -241,6 +243,15 @@ function CalculatorContent() {
     }
   };
 
+  const serviceOptions = [
+    { id: 'residential', title: 'Residential', description: 'Regular maintenance cleaning.', icon: Home },
+    { id: 'deep', title: 'Deep Clean', description: 'Thorough top-to-bottom clean.', icon: Sparkles },
+    { id: 'move', title: 'Move In/Out', description: 'Empty home deep cleaning.', icon: Key },
+    { id: 'vacation', title: 'Vacation/Airbnb', description: 'Turnover cleaning for rentals.', icon: Building2 },
+  ];
+
+  const selectedServiceOption = serviceOptions.find(o => o.id === quote.serviceType) || null;
+
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 pb-32 md:pb-8 space-y-8">
       <header className="mb-8 border-b border-zinc-200 pb-6">
@@ -267,14 +278,8 @@ function CalculatorContent() {
               <Stepper 
                 label="Bedrooms" 
                 value={quote.beds} 
-                onChange={(val) => updateQuote({ beds: val, bedsToChange: Math.min(val, quote.bedsToChange || 0) })} 
+                onChange={(val) => updateQuote({ beds: val })} 
                 min={0} max={10} 
-              />
-              <Stepper 
-                label="Bed Linens to Change" 
-                value={quote.bedsToChange || 0} 
-                onChange={(val) => updateQuote({ bedsToChange: val })} 
-                min={0} max={quote.beds} 
               />
               <Stepper 
                 label="Bathrooms" 
@@ -291,126 +296,200 @@ function CalculatorContent() {
             </div>
           </section>
 
-          {/* Service Frequency */}
-          <section className="space-y-4">
-            <h2 className="text-lg font-semibold text-zinc-900 flex items-center gap-2">
-              <Calendar className="text-sky-500" size={20} /> Service Frequency
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4">
-              <ServiceCard 
-                title="One-time" 
-                description="Single visit." 
-                icon={<Calendar size={20} />} 
-                selected={quote.frequency === 'one-time'} 
-                onClick={() => updateQuote({ frequency: 'one-time' })} 
-              />
-              <ServiceCard 
-                title="Weekly" 
-                description="Most popular recurring." 
-                icon={<Calendar size={20} />} 
-                selected={quote.frequency === 'weekly'} 
-                onClick={() => quote.serviceType === 'residential' && updateQuote({ frequency: 'weekly' })} 
-                disabled={quote.serviceType !== 'residential'}
-              />
-              <ServiceCard 
-                title="Bi-weekly" 
-                description="Every 14 days." 
-                icon={<Calendar size={20} />} 
-                selected={quote.frequency === 'bi-weekly'} 
-                onClick={() => quote.serviceType === 'residential' && updateQuote({ frequency: 'bi-weekly' })} 
-                disabled={quote.serviceType !== 'residential'}
-              />
-              <ServiceCard 
-                title="Monthly" 
-                description="Every 4 weeks." 
-                icon={<Calendar size={20} />} 
-                selected={quote.frequency === 'monthly'} 
-                onClick={() => quote.serviceType === 'residential' && updateQuote({ frequency: 'monthly' })} 
-                disabled={quote.serviceType !== 'residential'}
-              />
-            </div>
-          </section>
-
-          {/* Service Type */}
-          <section className="space-y-4">
+          {/* Service Tier */}
+          <section className="space-y-4 relative z-20">
             <h2 className="text-lg font-semibold text-zinc-900 flex items-center gap-2">
               <Sparkles className="text-sky-500" size={20} /> Service Tier
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4">
-              <ServiceCard 
-                title="Residential" 
-                description="Regular maintenance cleaning." 
-                icon={<Home size={20} />} 
-                selected={quote.serviceType === 'residential'} 
-                onClick={() => handleServiceChange('residential')} 
-              />
-              <ServiceCard 
-                title="Deep Clean" 
-                description="Thorough top-to-bottom clean." 
-                icon={<Sparkles size={20} />} 
-                selected={quote.serviceType === 'deep'} 
-                onClick={() => handleServiceChange('deep')} 
-              />
-              <ServiceCard 
-                title="Move In/Out" 
-                description="Empty home deep cleaning." 
-                icon={<Key size={20} />} 
-                selected={quote.serviceType === 'move'} 
-                onClick={() => handleServiceChange('move')} 
-              />
-              <ServiceCard 
-                title="Vacation/Airbnb" 
-                description="Turnover cleaning for rentals." 
-                icon={<Home size={20} />} 
-                selected={quote.serviceType === 'vacation'} 
-                onClick={() => handleServiceChange('vacation')} 
-              />
-              <ServiceCard 
-                title="Commercial" 
-                description="Office & business cleaning." 
-                icon={<Building2 size={20} />} 
-                selected={quote.serviceType === 'commercial'} 
-                onClick={() => handleServiceChange('commercial')} 
-              />
-              <ServiceCard 
-                title="Post-Construction" 
-                description="Heavy duty dust & debris removal." 
-                icon={<Hammer size={20} />} 
-                selected={quote.serviceType === 'construction'} 
-                onClick={() => handleServiceChange('construction')} 
-              />
+            
+            <div className="relative max-w-sm">
+              <button
+                type="button"
+                onClick={() => setIsServiceDropdownOpen(!isServiceDropdownOpen)}
+                className={`w-full flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all duration-300 outline-none focus:ring-4 focus:ring-sky-500/20 ${
+                  isServiceDropdownOpen 
+                    ? 'border-sky-500 bg-sky-50/50 shadow-sm' 
+                    : quote.serviceType 
+                      ? 'border-sky-500 bg-sky-50/50 shadow-sm' 
+                      : 'border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50 shadow-sm'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center shrink-0 transition-colors ${
+                    quote.serviceType ? 'bg-sky-500 text-white shadow-sm' : 'bg-zinc-100 text-zinc-500'
+                  }`}>
+                    {selectedServiceOption ? <selectedServiceOption.icon size={20} /> : <Box size={20} />}
+                  </div>
+                  <div className="text-left">
+                    <div className={`font-bold text-sm ${quote.serviceType ? 'text-sky-950' : 'text-zinc-700'}`}>
+                      {selectedServiceOption ? selectedServiceOption.title : 'Select a Service Tier'}
+                    </div>
+                    <div className={`text-[11px] font-medium leading-tight ${quote.serviceType ? 'text-sky-700/80' : 'text-zinc-500'}`}>
+                      {selectedServiceOption ? selectedServiceOption.description : 'Choose the best match for your needs'}
+                    </div>
+                  </div>
+                </div>
+                <ChevronDown size={20} className={`text-zinc-400 transition-transform duration-300 ${isServiceDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {isServiceDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full left-0 right-0 mt-3 bg-white rounded-2xl shadow-xl shadow-zinc-200/50 border border-zinc-100 overflow-hidden z-30"
+                  >
+                    <div className="p-2 space-y-1">
+                      {serviceOptions.map((opt) => (
+                        <button
+                          key={opt.id}
+                          onClick={() => {
+                            handleServiceChange(opt.id as ServiceType);
+                            setIsServiceDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all duration-200 group ${
+                            quote.serviceType === opt.id ? 'bg-sky-50/80' : 'hover:bg-zinc-50'
+                          }`}
+                        >
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                            quote.serviceType === opt.id ? 'bg-sky-500 text-white shadow-sm' : 'bg-zinc-100 text-zinc-500 group-hover:bg-zinc-200 group-hover:text-zinc-700'
+                          }`}>
+                            <opt.icon size={18} />
+                          </div>
+                          <div className="text-left flex-1">
+                            <div className={`text-[13px] font-bold ${quote.serviceType === opt.id ? 'text-sky-950' : 'text-zinc-700 group-hover:text-zinc-900'}`}>
+                              {opt.title}
+                            </div>
+                            <div className="text-[11px] font-medium text-zinc-500">
+                              {opt.description}
+                            </div>
+                          </div>
+                          {quote.serviceType === opt.id && (
+                            <CheckCircle2 size={18} className="text-sky-500 mr-1" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             
-            {/* Dynamic Service Description */}
-            <div className="bg-sky-50 border border-sky-100 rounded-xl p-4 mt-4 text-sm animate-in fade-in duration-300">
-              <h3 className="font-bold text-sky-900 mb-2 flex items-center gap-2">
-                <BookOpen size={16} /> 
-                What&apos;s included in {quote.serviceType === 'move' ? 'Move In/Out' : quote.serviceType.charAt(0).toUpperCase() + quote.serviceType.slice(1)}?
-              </h3>
-              <ul className="space-y-1.5 text-sky-800">
-                {serviceDescriptions[quote.serviceType].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <CheckCircle2 size={16} className="text-sky-500 mt-0.5 shrink-0" />
-                    <span className={i === 0 && (quote.serviceType === 'deep' || quote.serviceType === 'move') ? 'font-bold' : ''}>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
           </section>
 
-          {/* Extras */}
-          <section className="space-y-4">
-            <h2 className="text-lg font-semibold text-zinc-900 flex items-center gap-2">
-              <Box className="text-sky-500" size={20} /> Add-on Services
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <ExtraCard title="Inside Oven" price={settings.extras.oven} icon={<Box size={18} />} selected={(quote.selectedExtras || []).includes('oven')} onClick={() => toggleExtra('oven')} />
-              <ExtraCard title="Inside Fridge" price={settings.extras.fridge} icon={<Box size={18} />} selected={(quote.selectedExtras || []).includes('fridge')} onClick={() => toggleExtra('fridge')} />
-              <ExtraCard title="Interior Windows" price={settings.extras.windows} icon={<Wind size={18} />} selected={(quote.selectedExtras || []).includes('windows')} onClick={() => toggleExtra('windows')} />
-              <ExtraCard title="Inside Cabinets" price={settings.extras.cabinets} icon={<Box size={18} />} selected={(quote.selectedExtras || []).includes('cabinets')} onClick={() => toggleExtra('cabinets')} />
-              <ExtraCard title="Garage Sweep" price={settings.extras.garage} icon={<CarFront size={18} />} selected={(quote.selectedExtras || []).includes('garage')} onClick={() => toggleExtra('garage')} />
-            </div>
-          </section>
+          {/* Service Frequency, Extras, and Description wrapper */}
+          <AnimatePresence mode="wait">
+            {quote.serviceType && (
+              <motion.div 
+                key="details-sections"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className="space-y-12"
+              >
+                {/* Service Frequency */}
+                <section className="space-y-4">
+                  <h2 className="text-lg font-semibold text-zinc-900 flex items-center gap-2">
+                    <Calendar className="text-sky-500" size={20} /> Service Frequency
+                  </h2>
+                  
+                  {quote.serviceType === 'residential' ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      {[
+                        { id: 'weekly', label: 'Weekly', desc: 'Most popular view' },
+                        { id: 'bi-weekly', label: 'Bi-weekly', desc: 'Every 14 days' },
+                        { id: 'monthly', label: 'Monthly', desc: 'Every 4 weeks' }
+                      ].map((freq) => (
+                        <button
+                          key={freq.id}
+                          onClick={() => updateQuote({ frequency: freq.id as any })}
+                          className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition-all duration-300 outline-none focus:ring-4 focus:ring-sky-500/20 ${
+                            quote.frequency === freq.id
+                              ? 'border-sky-500 bg-sky-50/50 shadow-sm'
+                              : 'border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50'
+                          }`}
+                        >
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                            quote.frequency === freq.id ? 'bg-sky-500 text-white shadow-sm' : 'bg-zinc-100 text-zinc-500'
+                          }`}>
+                            <Calendar size={18} />
+                          </div>
+                          <div className="text-left">
+                            <div className={`font-bold text-sm ${quote.frequency === freq.id ? 'text-sky-900' : 'text-zinc-700'}`}>
+                              {freq.label}
+                            </div>
+                            <div className={`text-[11px] font-medium ${quote.frequency === freq.id ? 'text-sky-600' : 'text-zinc-500'}`}>
+                              {freq.desc}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-zinc-50 border border-zinc-200/80 rounded-2xl p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 max-w-2xl">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-600 shrink-0">
+                          <Calendar size={18} />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-black text-zinc-900 tracking-wide">
+                            {language === 'en' ? 'Frequency: One-time Clean' : 'Frequência: Visita Única'}
+                          </h4>
+                          <p className="text-xs text-zinc-500 font-medium mt-0.5">
+                            {language === 'en' 
+                              ? 'Specialized cleans are scheduled as single visits for a thorough outcome.' 
+                              : 'Limpezas avulsas para garantir resultados excepcionais.'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-center shrink-0">
+                        <span className="bg-emerald-500/10 text-emerald-700 text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-full border border-emerald-500/15">
+                          {language === 'en' ? 'Selected' : 'Selecionado'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </section>
+
+                {/* Extras */}
+                <section className="space-y-4 border-t border-zinc-100 pt-8">
+                  <h2 className="text-lg font-semibold text-zinc-900 flex items-center gap-2">
+                    <Box className="text-sky-500" size={20} /> Add-on Services
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <ExtraCard title="Inside Oven" price={settings.extras.oven} selected={(quote.selectedExtras || []).includes('oven')} onClick={() => toggleExtra('oven')} />
+                    <ExtraCard title="Inside Fridge" price={settings.extras.fridge} selected={(quote.selectedExtras || []).includes('fridge')} onClick={() => toggleExtra('fridge')} />
+                    <ExtraCard title="Interior Windows" price={settings.extras.windows} selected={(quote.selectedExtras || []).includes('windows')} onClick={() => toggleExtra('windows')} />
+                    <ExtraCard title="Inside Cabinets" price={settings.extras.cabinets} selected={(quote.selectedExtras || []).includes('cabinets')} onClick={() => toggleExtra('cabinets')} />
+                    {quote.serviceType === 'deep' && (
+                      <ExtraCard title="Sheet change (after 1st one)" price={settings.extras.sheetChange || 10} selected={(quote.selectedExtras || []).includes('sheetChange')} onClick={() => toggleExtra('sheetChange')} />
+                    )}
+                  </div>
+                </section>
+
+                {/* Dynamic Service Description */}
+                <section className="space-y-4 border-t border-zinc-100 pt-8">
+                  <div className="bg-sky-50 border border-sky-100 rounded-2xl p-6 text-sm animate-in fade-in duration-300">
+                    <h3 className="font-bold text-sky-900 mb-3 flex items-center gap-2 text-base">
+                      <BookOpen size={18} className="text-sky-500" /> 
+                      What&apos;s included in {quote.serviceType === 'move' ? 'Move In/Out' : quote.serviceType.charAt(0).toUpperCase() + quote.serviceType.slice(1)}?
+                    </h3>
+                    <ul className="space-y-2.5 text-sky-800">
+                      {serviceDescriptions[quote.serviceType]?.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2.5">
+                          <CheckCircle2 size={18} className="text-sky-500 mt-0.5 shrink-0" />
+                          <span className={i === 0 && (quote.serviceType === 'deep' || quote.serviceType === 'move') ? 'font-bold' : 'leading-relaxed'}>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </section>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Summary Panel */}
@@ -425,7 +504,7 @@ function CalculatorContent() {
               <div className="bg-sky-50 p-4 rounded-xl border border-sky-100 mb-4">
                 <p className="text-xs font-bold text-sky-800 uppercase tracking-wider mb-2">Service Details</p>
                 <div className="grid grid-cols-2 gap-2 text-sky-900 font-medium">
-                  <div><span className="text-sky-600/70 block text-[10px] uppercase">Service Type</span> <span className="capitalize">{quote.serviceType === 'move' ? 'Move In/Out' : quote.serviceType} Cleaning</span></div>
+                  <div><span className="text-sky-600/70 block text-[10px] uppercase">Service Type</span> <span className="capitalize">{quote.serviceType ? `${quote.serviceType === 'move' ? 'Move In/Out' : quote.serviceType} Cleaning` : 'Not Selected'}</span></div>
                   <div><span className="text-sky-600/70 block text-[10px] uppercase">Area</span> {quote.sqFt} sq ft</div>
                   <div><span className="text-sky-600/70 block text-[10px] uppercase">Rooms</span> {quote.beds} Beds, {quote.baths} Baths</div>
                   <div><span className="text-sky-600/70 block text-[10px] uppercase">Frequency</span> <span className="capitalize">{quote.frequency}</span></div>
@@ -448,8 +527,8 @@ function CalculatorContent() {
                   {quote.serviceType === 'vacation' && (
                     <li className="flex items-start gap-1.5 font-bold text-sky-700 bg-sky-50 rounded px-1 -mx-1"><Sparkles size={14} className="text-sky-500 shrink-0 mt-0.5" /> Restocking supplies, laundry setup, and staging</li>
                   )}
-                  {(quote.bedsToChange || 0) > 0 && (
-                    <li className="flex items-start gap-1.5 font-medium"><CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Changing Linens ({quote.bedsToChange} {quote.bedsToChange === 1 ? 'Bed' : 'Beds'})</li>
+                  {(quote.selectedExtras || []).includes('sheetChange') && quote.beds > 1 && (
+                    <li className="flex items-start gap-1.5 font-medium"><CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Changing Linens (Extra {quote.beds - 1} {quote.beds - 1 === 1 ? 'Bed' : 'Beds'})</li>
                   )}
                 </ul>
               </div>
@@ -552,7 +631,7 @@ function CalculatorContent() {
               </div>
               <button 
                 onClick={handleSave}
-                disabled={isGenerating || showSuccessToast || !customerName}
+                disabled={isGenerating || showSuccessToast || !customerName || !quote.serviceType}
                 className="w-full py-3 mt-2 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-semibold rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isGenerating ? (
@@ -574,7 +653,7 @@ function CalculatorContent() {
 
               <button 
                 onClick={handleSendEstimateWebhook}
-                disabled={isSendingWebhook || !customerName}
+                disabled={isSendingWebhook || !customerName || !quote.serviceType}
                 className="w-full py-3 mt-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold rounded-lg transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSendingWebhook ? (

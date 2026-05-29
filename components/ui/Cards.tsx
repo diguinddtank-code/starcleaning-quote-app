@@ -46,27 +46,27 @@ interface ExtraCardProps {
   onClick: () => void;
 }
 
-export function ExtraCard({ title, price, icon, selected, onClick }: ExtraCardProps) {
+export function ExtraCard({ title, price, selected, onClick }: Omit<ExtraCardProps, 'icon'>) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        "flex flex-col sm:flex-row items-center sm:items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 w-full hover:-translate-y-0.5",
+        "flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-300 w-full hover:shadow-sm focus:outline-none focus:ring-4 focus:ring-sky-500/10",
         selected 
-          ? "border-sky-500 bg-sky-50 shadow-sm shadow-sky-500/20 ring-1 ring-sky-500/20" 
-          : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50 hover:shadow-sm"
+          ? "border-sky-500 bg-sky-50/50 shadow-sm" 
+          : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
       )}
     >
-      <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-3 w-full">
+      <div className="flex items-center gap-3 w-full">
         <div className={cn(
-          "p-2.5 rounded-xl transition-colors shrink-0",
-          selected ? "bg-sky-500 text-white shadow-md shadow-sky-500/20" : "bg-zinc-100 text-zinc-500"
+          "w-5 h-5 rounded flex items-center justify-center shrink-0 border transition-colors duration-200",
+          selected ? "bg-sky-500 border-sky-500 text-white" : "border-zinc-300 bg-zinc-50 text-transparent"
         )}>
-          {icon}
+          <Check strokeWidth={3} className="w-3.5 h-3.5" />
         </div>
-        <div className="flex-1">
-          <h4 className={cn("font-semibold text-sm", selected ? "text-sky-950" : "text-zinc-800")}>{title}</h4>
-          <p className="text-xs font-medium text-zinc-500 mt-0.5">+${price}</p>
+        <div className="flex-1 text-left flex items-center justify-between">
+          <span className={cn("font-semibold text-sm", selected ? "text-sky-950" : "text-zinc-700")}>{title}</span>
+          <span className={cn("text-xs font-bold px-2 py-1 rounded-md", selected ? "bg-sky-500/10 text-sky-700" : "bg-zinc-100 text-zinc-500")}>+${price}</span>
         </div>
       </div>
     </button>

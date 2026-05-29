@@ -61,16 +61,20 @@ export function generateQuoteEmailHtml(quote: SavedQuote, settings: PricingSetti
   };
 
   const selectedExtrasList = quote.selectedExtras || [];
+  const additionalBeds = Math.max(0, (quote.beds || 0) - 1);
+  const bedChangeCost = (quote.selectedExtras || []).includes('sheetChange') && additionalBeds > 0
+    ? additionalBeds * (rawExtras.sheetChange || 10) 
+    : 0;
+
+  let totalEstimateVal = quote.total || 0;
+  
+  // Calculate extrasTotal ignoring sheetChange since we calculate it separately above, or add it to both and subtract.
   const extrasTotal = selectedExtrasList.reduce((sum, extra) => {
+    if (extra === 'sheetChange') return sum; // Skip since we calculated it in bedChangeCost
     const cost = rawExtras[extra as keyof typeof rawExtras] || 0;
     return sum + cost;
   }, 0);
 
-  const bedChangeCost = (quote.bedsToChange || 0) > 1 
-    ? ((quote.bedsToChange || 0) - 1) * (rawExtras.bedChange || 10) 
-    : 0;
-
-  const totalEstimateVal = quote.total || 0;
   const primaryServiceCost = Math.max(0, totalEstimateVal - extrasTotal - bedChangeCost);
 
   // Recurring Estimates
@@ -96,6 +100,7 @@ export function generateQuoteEmailHtml(quote: SavedQuote, settings: PricingSetti
       </tr>
     `;
     selectedExtrasList.forEach((extra) => {
+      if (extra === 'sheetChange') return; // Handled separately
       const label = extra.replace(/([A-Z])/g, " $1").trim();
       const cost = rawExtras[extra as keyof typeof rawExtras] || 0;
       extrasRowsHtml += `
@@ -115,7 +120,7 @@ export function generateQuoteEmailHtml(quote: SavedQuote, settings: PricingSetti
     extrasRowsHtml += `
       <tr>
         <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px; color: #4b5563;">
-          Extra Bed Linens Change (${(quote.bedsToChange || 0) - 1} extra beds)
+          Sheet Change (Extra ${additionalBeds} ${additionalBeds === 1 ? 'bed' : 'beds'})
         </td>
         <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; font-size: 14px; text-align: right; font-weight: 500; color: #111827;">
           $${bedChangeCost}
@@ -224,7 +229,7 @@ export function generateQuoteEmailHtml(quote: SavedQuote, settings: PricingSetti
                     <strong style="display: block; font-size: 13px; color: #111827; margin-bottom: 4px;">Star Cleaning SC</strong>
                     <span style="font-size: 11px; line-height: 1.4; color: #4b5563; display: block;">
                       Charleston, South Carolina<br />
-                      contact@starcleaningsc.com<br />
+                      admin@starcleaningsc.com<br />
                       www.starcleaningsc.com
                     </span>
                   </td>

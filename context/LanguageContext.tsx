@@ -172,7 +172,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const saved = localStorage.getItem('starCleaningLang') as Language;
     if (saved && saved !== language) {
-       // eslint-disable-next-line react-hooks/set-state-in-effect
+        
        setLanguage(saved);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { SavedQuote, PricingSettings } from '@/lib/types';
+import { SavedQuote, PricingSettings, ServiceType } from '@/lib/types';
 import { CheckCircle2, Loader2, Send, X, Eye, EyeOff } from 'lucide-react';
 import { generateQuoteEmailHtml } from '@/lib/emailTemplate';
 
@@ -118,7 +118,8 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
   const areaPrice = Math.round(quote.sqFt * settings.pricePerSqFt);
   const roomsPrice = (quote.beds * settings.bedPrice) + (quote.baths * settings.bathPrice) + (quote.halfBaths * settings.halfBathPrice);
   
-  const serviceNames = {
+  const serviceNames: Record<ServiceType, string> = {
+    '': 'Not Selected',
     residential: 'Residential',
     deep: 'Deep Clean',
     move: 'Move In/Out',
@@ -141,8 +142,17 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
   const validUntil = new Date(quote.date);
   validUntil.setDate(validUntil.getDate() + 30);
 
-  const extrasTotal = (quote.selectedExtras || []).reduce((sum, extra) => sum + settings.extras[extra as keyof typeof settings.extras], 0);
-  const primaryServiceCost = quote.total - extrasTotal - (((quote.bedsToChange || 0) > 1) ? ((quote.bedsToChange || 0) - 1) * (settings.extras?.bedChange || 10) : 0);
+  const additionalBeds = Math.max(0, quote.beds - 1);
+  const bedChangeCost = (quote.selectedExtras || []).includes('sheetChange') && additionalBeds > 0
+    ? additionalBeds * (settings.extras?.sheetChange || 10) 
+    : 0;
+
+  const extrasTotal = (quote.selectedExtras || []).reduce((sum, extra) => {
+    if (extra === 'sheetChange') return sum; // Skip since we calculated it in bedChangeCost
+    return sum + (settings.extras[extra as keyof typeof settings.extras] || 0);
+  }, 0);
+
+  const primaryServiceCost = quote.total - extrasTotal - bedChangeCost;
   
   // Calculate standard total for recurring preview exactly like estimate/page.tsx
   const standardTotalForPreview = settings.basePrice + areaPrice + roomsPrice;
@@ -198,7 +208,7 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
           <p className="text-sm font-bold text-zinc-900 mb-1">Star Cleaning SC</p>
           <p className="text-xs text-zinc-600 leading-relaxed">
             Charleston, South Carolina<br />
-            contact@starcleaningsc.com<br />
+            admin@starcleaningsc.com<br />
             www.starcleaningsc.com
           </p>
         </div>
@@ -262,23 +272,23 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
               </td>
               <td className="py-4 text-right font-medium text-zinc-900 align-top">${primaryServiceCost}</td>
             </tr>
-            {(quote.bedsToChange || 0) > 1 && (
+            {bedChangeCost > 0 && (
               <tr>
                 <td className="py-3 text-zinc-700">
-                  <span className="font-medium text-zinc-900 block">Extra Bed Linens Change</span>
-                  <span className="text-xs text-zinc-500">{(quote.bedsToChange || 0) - 1} extra beds (1st bed is complimentary)</span>
+                  <span className="font-medium text-zinc-900 block">Sheet Change (Extra beds)</span>
+                  <span className="text-xs text-zinc-500">{additionalBeds} extra {additionalBeds === 1 ? 'bed' : 'beds'}</span>
                 </td>
-                <td className="py-3 text-right font-medium text-zinc-900 align-top">${((quote.bedsToChange || 0) - 1) * (settings.extras?.bedChange || 10)}</td>
+                <td className="py-3 text-right font-medium text-zinc-900 align-top">${bedChangeCost}</td>
               </tr>
             )}
-            {(quote.selectedExtras || []).length > 0 && (
+            {(quote.selectedExtras || []).filter(e => e !== 'sheetChange').length > 0 && (
               <tr>
                 <td className="py-3 text-zinc-700" colSpan={2}>
                   <span className="font-bold text-xs text-zinc-400 uppercase tracking-wider block mt-2 mb-1">Add-on Services</span>
                 </td>
               </tr>
             )}
-            {(quote.selectedExtras || []).map(extra => (
+            {(quote.selectedExtras || []).filter(e => e !== 'sheetChange').map(extra => (
               <tr key={extra}>
                 <td className="py-3 text-zinc-700">
                   <span className="font-medium text-zinc-900 capitalize">{extra.replace(/([A-Z])/g, ' $1').trim()}</span>
@@ -323,10 +333,10 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
             <span className="font-medium text-zinc-900">${primaryServiceCost}</span>
           </div>
           
-          {((quote.bedsToChange || 0) > 1 || (quote.selectedExtras || []).length > 0) && (
+          {(bedChangeCost > 0 || (quote.selectedExtras || []).filter(e => e !== 'sheetChange').length > 0) && (
             <div className="flex justify-between items-center mb-3 text-sm">
               <span className="text-zinc-500">Add-ons & Extras</span>
-              <span className="font-medium text-zinc-900">+ ${extrasTotal + (((quote.bedsToChange || 0) > 1) ? ((quote.bedsToChange || 0) - 1) * (settings.extras?.bedChange || 10) : 0)}</span>
+              <span className="font-medium text-zinc-900">+ ${extrasTotal + bedChangeCost}</span>
             </div>
           )}
           <div className="flex justify-between items-center pt-4 border-t border-zinc-200 mt-2">
