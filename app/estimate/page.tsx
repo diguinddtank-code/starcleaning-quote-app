@@ -45,22 +45,18 @@ function CalculatorContent() {
     setIsSendingWebhook(true);
     setWebhookSentStatus('idle');
     try {
-      const WEBHOOK_URL = 'https://webhook.infra-remakingautomacoes.cloud/webhook/estimatesc';
-      const estimateUrl = savedEstimate 
-        ? `${window.location.origin}/estimate/view?id=${savedEstimate.id}` 
-        : (typeof window !== 'undefined' ? `${window.location.origin}/estimate/view?id=latest` : '');
+      let finalQuote = savedEstimate;
       
-      const quoteObj: SavedQuote = savedEstimate || {
-        ...quote,
-        id: 'latest',
-        date: new Date().toISOString(),
-        total: totalPrice,
-        customerName: customerName,
-        customerEmail: customerEmail,
-        customerPhone: customerPhone,
-        customerAddress: ''
-      };
-      const htmlContent = generateQuoteEmailHtml(quoteObj, settings, estimateUrl);
+      // Auto-save if not saved yet to get a real ID for the link
+      if (!finalQuote) {
+        finalQuote = await saveQuoteToLead(leadId, customerName, customerPhone, customerEmail);
+        setSavedEstimate(finalQuote);
+      }
+
+      const WEBHOOK_URL = 'https://webhook.infra-remakingautomacoes.cloud/webhook/estimatesc';
+      const estimateUrl = `${window.location.origin}/estimate/view?id=${finalQuote.id}`;
+      
+      const htmlContent = generateQuoteEmailHtml(finalQuote, settings, estimateUrl);
       
       const payload = {
         event: 'estimate_sent',

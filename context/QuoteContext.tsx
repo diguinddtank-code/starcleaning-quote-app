@@ -180,7 +180,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
   const totalPrice = calculateTotal();
 
   const saveQuoteToLead = async (leadId?: string, customerName?: string, customerPhone?: string, customerEmail?: string): Promise<SavedQuote> => {
-    const qid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9);
+    const qid = Math.floor(100000 + Math.random() * 900000).toString();
     const newQuote: SavedQuote = {
       ...quote,
       id: qid,

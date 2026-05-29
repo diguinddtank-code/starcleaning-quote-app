@@ -156,7 +156,7 @@ export function generateQuoteEmailHtml(quote: SavedQuote, settings: PricingSetti
   const approveUrl = `https://webhook.infra-remakingautomacoes.cloud/webhook/estimateap?id=${encodeURIComponent(quote.id)}&customerName=${encodeURIComponent(quote.customerName || '')}&customerEmail=${encodeURIComponent(quote.customerEmail || '')}&total=${quote.total}&serviceType=${encodeURIComponent(serviceType)}&sqFt=${encodeURIComponent(quote.sqFt || 0)}&beds=${encodeURIComponent(quote.beds || 0)}&baths=${encodeURIComponent(quote.baths || 0)}&frequency=${encodeURIComponent(quote.frequency || 'one-time')}`;
   const rejectUrl = `https://webhook.infra-remakingautomacoes.cloud/webhook/estimaterj?id=${encodeURIComponent(quote.id)}&customerName=${encodeURIComponent(quote.customerName || '')}&customerEmail=${encodeURIComponent(quote.customerEmail || '')}&total=${quote.total}`;
 
-  const estimateNo = quote.id.split("-")[0].toUpperCase();
+  const estimateNo = quote.id !== "latest" ? quote.id.split("-")[0].toUpperCase() : Math.floor(100000 + Math.random() * 900000).toString();
   const validUntilStr = new Date(new Date(quote.date).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString();
 
   return `<!DOCTYPE html>
@@ -174,7 +174,8 @@ export function generateQuoteEmailHtml(quote: SavedQuote, settings: PricingSetti
       .pad-all { padding: 20px 15px !important; }
       .pad-side { padding: 0 15px 20px 15px !important; }
       .pad-top { padding-top: 20px !important; }
-      .mobile-col { display: block !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; text-align: left !important; padding-right: 0 !important; padding-left: 0 !important; margin: 0 !important; }
+      .mobile-col { display: block !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; text-align: left !important; margin: 0 !important; }
+      .mobile-pad { padding-left: 15px !important; padding-right: 15px !important; }
       .mobile-center { text-align: center !important; }
       .mobile-mb { margin-bottom: 20px !important; }
       .mobile-border { border-right: none !important; border-bottom: 1px solid #f3f4f6 !important; margin-bottom: 15px !important; padding-bottom: 15px !important; }
@@ -384,14 +385,9 @@ export function generateQuoteEmailHtml(quote: SavedQuote, settings: PricingSetti
                 </tr>
               </table>
 
-              <!-- Client Portal Link -->
-              <p style="margin: 0; font-size: 12px; color: #6b7280;">
-                Need changes? <a href="${estimateUrl}" target="_blank" style="color: #0284c7; text-decoration: underline; font-weight: 600;">Open Interactive Client Portal</a> to view and customize details.
-              </p>
+              <!-- Terms section -->
             </td>
           </tr>
-
-          <!-- Terms section -->
           <tr>
             <td style="padding: 30px 35px; border-top: 1px solid #f3f4f6; background-color: #fafafa;" class="pad-all">
               <strong style="display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; margin-bottom: 10px;">Terms & Conditions</strong>
