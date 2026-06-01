@@ -71,6 +71,8 @@ function CalculatorContent() {
         beds: quote.beds,
         baths: quote.baths,
         extras: quote.selectedExtras || [],
+        militaryDiscount: quote.militaryDiscount || false,
+        manualDiscount: quote.manualDiscount || 0,
         estimateUrl: estimateUrl,
         htmlContent: htmlContent
       };
@@ -463,6 +465,35 @@ function CalculatorContent() {
                     {quote.serviceType === 'deep' && (
                       <ExtraCard title="Sheet change (after 1st one)" price={settings.extras.sheetChange || 10} selected={(quote.selectedExtras || []).includes('sheetChange')} onClick={() => toggleExtra('sheetChange')} />
                     )}
+                  </div>
+                </section>
+
+                {/* Discounts */}
+                <section className="space-y-4 border-t border-zinc-100 pt-8">
+                  <h2 className="text-lg font-semibold text-zinc-900 flex items-center gap-2">
+                    <CheckCircle2 className="text-sky-500" size={20} /> Discounts & Adjustments
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <ExtraCard 
+                      title="Military Discount" 
+                      priceText="-10%" 
+                      selected={!!quote.militaryDiscount} 
+                      onClick={() => updateQuote({ militaryDiscount: !quote.militaryDiscount })} 
+                    />
+                    <div className="flex flex-col justify-center gap-1.5 p-3 rounded-xl border border-zinc-200 bg-white shadow-sm hover:border-zinc-300 transition-colors">
+                      <label className="text-xs font-semibold text-zinc-600 uppercase tracking-wider">Manual Discount ($)</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 font-medium">$</span>
+                        <input 
+                          type="number"
+                          min="0"
+                          placeholder="0.00"
+                          className="w-full pl-7 pr-3 py-1.5 border border-zinc-200 rounded-lg text-sm font-medium outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
+                          value={quote.manualDiscount || ''}
+                          onChange={(e) => updateQuote({ manualDiscount: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </section>
 

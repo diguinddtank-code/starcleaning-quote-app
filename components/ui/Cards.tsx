@@ -40,13 +40,14 @@ export function ServiceCard({ title, description, icon, selected, onClick, disab
 
 interface ExtraCardProps {
   title: string;
-  price: number;
+  price?: number;
+  priceText?: string;
   icon: ReactNode;
   selected: boolean;
   onClick: () => void;
 }
 
-export function ExtraCard({ title, price, selected, onClick }: Omit<ExtraCardProps, 'icon'>) {
+export function ExtraCard({ title, price, priceText, selected, onClick }: Omit<ExtraCardProps, 'icon'>) {
   return (
     <button
       onClick={onClick}
@@ -66,7 +67,9 @@ export function ExtraCard({ title, price, selected, onClick }: Omit<ExtraCardPro
         </div>
         <div className="flex-1 text-left flex items-center justify-between">
           <span className={cn("font-semibold text-sm", selected ? "text-sky-950" : "text-zinc-700")}>{title}</span>
-          <span className={cn("text-xs font-bold px-2 py-1 rounded-md", selected ? "bg-sky-500/10 text-sky-700" : "bg-zinc-100 text-zinc-500")}>+${price}</span>
+          <span className={cn("text-xs font-bold px-2 py-1 rounded-md", selected ? "bg-sky-500/10 text-sky-700" : "bg-zinc-100 text-zinc-500")}>
+            {priceText ? priceText : (price !== undefined ? `+$${price}` : '')}
+          </span>
         </div>
       </div>
     </button>

@@ -152,7 +152,19 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
     return sum + (settings.extras[extra as keyof typeof settings.extras] || 0);
   }, 0);
 
-  const primaryServiceCost = quote.total - extrasTotal - bedChangeCost;
+  let preDiscountTotal = quote.total;
+  let militaryDiscountAmount = 0;
+  
+  if (quote.manualDiscount) {
+    preDiscountTotal += quote.manualDiscount;
+  }
+
+  if (quote.militaryDiscount) {
+    preDiscountTotal = Math.round(preDiscountTotal / 0.9);
+    militaryDiscountAmount = preDiscountTotal - (quote.total + (quote.manualDiscount || 0));
+  }
+
+  const primaryServiceCost = Math.max(0, preDiscountTotal - extrasTotal - bedChangeCost);
   
   // Calculate standard total for recurring preview exactly like estimate/page.tsx
   const standardTotalForPreview = settings.basePrice + areaPrice + roomsPrice;
@@ -339,6 +351,21 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
               <span className="font-medium text-zinc-900">+ ${extrasTotal + bedChangeCost}</span>
             </div>
           )}
+          
+          {quote.militaryDiscount && (
+            <div className="flex justify-between items-center mb-3 text-sm">
+              <span className="text-emerald-600 font-medium tracking-tight">Military Discount (10%)</span>
+              <span className="font-bold text-emerald-600">- ${militaryDiscountAmount}</span>
+            </div>
+          )}
+          
+          {quote.manualDiscount && quote.manualDiscount > 0 && (
+            <div className="flex justify-between items-center mb-3 text-sm">
+              <span className="text-sky-600 font-medium tracking-tight">Special Discount</span>
+              <span className="font-bold text-sky-600">- ${quote.manualDiscount}</span>
+            </div>
+          )}
+
           <div className="flex justify-between items-center pt-4 border-t border-zinc-200 mt-2">
             <span className="font-bold text-zinc-900 uppercase tracking-wider text-xs">Total Estimate</span>
             <span className="text-3xl font-bold text-sky-600 tracking-tight">${quote.total}</span>

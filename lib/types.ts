@@ -82,6 +82,8 @@ export interface QuoteState {
   serviceType: ServiceType;
   frequency: ServiceFrequency;
   selectedExtras: string[];
+  militaryDiscount?: boolean;
+  manualDiscount?: number;
 }
 
 export interface SavedQuote extends QuoteState {

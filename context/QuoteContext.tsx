@@ -63,7 +63,9 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
               frequency: q.frequency as any,
               total: q.total,
               status: q.status,
-              selectedExtras: q.selected_extras || []
+              selectedExtras: q.selected_extras || [],
+              militaryDiscount: q.military_discount || false,
+              manualDiscount: q.manual_discount || 0
             }));
             setSavedQuotes(mapped);
           }
@@ -174,7 +176,14 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return Math.round(total);
+    let finalTotal = Math.round(total);
+    if (quote.militaryDiscount) {
+      finalTotal = Math.round(finalTotal * 0.9);
+    }
+    if (quote.manualDiscount && quote.manualDiscount > 0) {
+      finalTotal = Math.max(0, finalTotal - quote.manualDiscount);
+    }
+    return finalTotal;
   };
 
   const totalPrice = calculateTotal();
@@ -241,6 +250,8 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
         service_type: quote.serviceType,
         frequency: quote.frequency,
         total: totalPrice,
+        military_discount: quote.militaryDiscount || false,
+        manual_discount: quote.manualDiscount || 0,
         status: 'new'
       };
 

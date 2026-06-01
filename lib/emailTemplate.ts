@@ -66,8 +66,6 @@ export function generateQuoteEmailHtml(quote: SavedQuote, settings: PricingSetti
     ? additionalBeds * (rawExtras.sheetChange || 10) 
     : 0;
 
-  let totalEstimateVal = quote.total || 0;
-  
   // Calculate extrasTotal ignoring sheetChange since we calculate it separately above, or add it to both and subtract.
   const extrasTotal = selectedExtrasList.reduce((sum, extra) => {
     if (extra === 'sheetChange') return sum; // Skip since we calculated it in bedChangeCost
@@ -75,7 +73,21 @@ export function generateQuoteEmailHtml(quote: SavedQuote, settings: PricingSetti
     return sum + cost;
   }, 0);
 
-  const primaryServiceCost = Math.max(0, totalEstimateVal - extrasTotal - bedChangeCost);
+  let preDiscountTotal = quote.total || 0;
+  let militaryDiscountAmount = 0;
+  
+  if (quote.manualDiscount) {
+    preDiscountTotal += quote.manualDiscount;
+  }
+  
+  if (quote.militaryDiscount) {
+    preDiscountTotal = Math.round(preDiscountTotal / 0.9);
+    militaryDiscountAmount = preDiscountTotal - ((quote.total || 0) + (quote.manualDiscount || 0));
+  }
+
+  const primaryServiceCost = Math.max(0, preDiscountTotal - extrasTotal - bedChangeCost);
+
+  let totalEstimateVal = quote.total || 0;
 
   // Recurring Estimates
   const standardTotalForPreview = basePrice + areaPrice + roomsPrice;
@@ -342,6 +354,26 @@ export function generateQuoteEmailHtml(quote: SavedQuote, settings: PricingSetti
                         <td align="right" style="font-size: 12px; font-weight: 500; color: #111827; padding-bottom: 12px;">+ $${
                           extrasTotal + bedChangeCost
                         }</td>
+                      </tr>
+                      `
+                          : ""
+                      }
+                      ${
+                        quote.militaryDiscount
+                          ? `
+                      <tr>
+                        <td style="font-size: 12px; color: #16a34a; padding-bottom: 12px; font-weight: 500;">Military Discount (10%)</td>
+                        <td align="right" style="font-size: 12px; font-weight: 500; color: #16a34a; padding-bottom: 12px;">- $${militaryDiscountAmount}</td>
+                      </tr>
+                      `
+                          : ""
+                      }
+                      ${
+                        quote.manualDiscount && quote.manualDiscount > 0
+                          ? `
+                      <tr>
+                        <td style="font-size: 12px; color: #0284c7; padding-bottom: 12px; font-weight: 500;">Special Discount</td>
+                        <td align="right" style="font-size: 12px; font-weight: 500; color: #0284c7; padding-bottom: 12px;">- $${quote.manualDiscount}</td>
                       </tr>
                       `
                           : ""

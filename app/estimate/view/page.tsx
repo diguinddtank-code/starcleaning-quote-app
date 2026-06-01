@@ -57,7 +57,9 @@ function EstimateDetail() {
           frequency: data.frequency || 'one-time',
           total: data.total || 0,
           status: data.status || 'new',
-          selectedExtras: data.selected_extras || []
+          selectedExtras: data.selected_extras || [],
+          militaryDiscount: data.military_discount || false,
+          manualDiscount: data.manual_discount || 0
         };
 
         setQuote(mapped);
