@@ -385,18 +385,30 @@ export function generateQuoteEmailHtml(quote: SavedQuote, settings: PricingSetti
                 </tr>
               </table>
 
-              <!-- Terms section -->
+              <!-- Policies section -->
             </td>
           </tr>
           <tr>
             <td style="padding: 30px 35px; border-top: 1px solid #f3f4f6; background-color: #fafafa;" class="pad-all">
-              <strong style="display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; margin-bottom: 10px;">Terms & Conditions</strong>
-              <ul style="margin: 0; padding: 0 0 0 16px; font-size: 11px; color: #71717a; line-height: 1.6;">
-                <li style="margin-bottom: 4px;">This estimate is valid for 30 days from the date of issue (${validUntilStr}).</li>
-                <li style="margin-bottom: 4px;">The final price may vary slightly based on the actual condition of the property upon arrival.</li>
-                <li style="margin-bottom: 4px;">Payment is due in full upon completion of the cleaning service unless otherwise agreed.</li>
-                <li style="margin-bottom: 4px;">Cancellations must be made at least 24 hours in advance to avoid a reservation fee.</li>
+              <strong style="display: block; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: #111827; margin-bottom: 20px; font-weight: bold;">📌 Policies</strong>
+              
+              <strong style="display: block; font-size: 12px; color: #374151; margin-bottom: 8px;">❌ Cancellation Policy</strong>
+              <p style="margin: 0 0 12px 0; font-size: 11px; color: #6b7280; line-height: 1.5;">We value the time of both our clients and cleaning technicians. To ensure smooth scheduling for everyone, we ask for proper notice for all cancellations or rescheduling.</p>
+              <ul style="margin: 0 0 20px 0; padding: 0 0 0 16px; font-size: 11px; color: #71717a; line-height: 1.6;">
+                <li style="margin-bottom: 4px;">Cancellations made less than 24 hours before the appointment will incur a $100 fee</li>
+                <li style="margin-bottom: 4px;">Same-day cancellations are non-refundable</li>
+                <li style="margin-bottom: 4px;">Deposits for cancellations made within 24 hours are non-refundable</li>
+                <li style="margin-bottom: 4px;">If water or electricity is unavailable at the property, Star Cleaning may cancel the appointment and fees may still apply</li>
+                <li style="margin-bottom: 4px;">Excessive trash, hazardous conditions, or unsafe environments may result in cancellation or additional charges</li>
               </ul>
+
+              <strong style="display: block; font-size: 12px; color: #374151; margin-bottom: 8px;">💯 Satisfaction Guarantee</strong>
+              <p style="margin: 0 0 20px 0; font-size: 11px; color: #6b7280; line-height: 1.5;">If you are not satisfied with your cleaning, please notify us within 24–48 hours after the service. We will gladly return to address any issues or perform necessary touch-ups.</p>
+              
+              <strong style="display: block; font-size: 12px; color: #374151; margin-bottom: 8px;">🔁 Rescheduling Policy</strong>
+              <p style="margin: 0 0 12px 0; font-size: 11px; color: #6b7280; line-height: 1.5;">Appointments may be rescheduled without penalty if notice is given at least 24 hours in advance, subject to availability.</p>
+              
+              <p style="margin: 0; font-size: 11px; color: #4b5563; line-height: 1.5; font-style: italic;">By booking with Star Cleaning, the client acknowledges and agrees to these terms.</p>
             </td>
           </tr>
           
