@@ -197,6 +197,25 @@ export function LeadDetailClient({ id }: { id: string }) {
     setTimeout(() => setCopiedText(null), 2500);
   };
 
+  const handleDownloadSelectedQuoteHtml = () => {
+    if (!selectedQuote) return;
+    const estimateUrl = typeof window !== 'undefined' 
+        ? `${window.location.origin}/estimate/view?id=${selectedQuote.id}` 
+        : `/estimate/view?id=${selectedQuote.id}`;
+
+    const htmlContent = generateQuoteEmailHtml(selectedQuote, settings, estimateUrl);
+    
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Estimate_${(selectedQuote.customerName || 'Client').replace(/\s+/g, '_')}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleSendWebhook = async (q: SavedQuote) => {
     setSendingQuoteId(q.id);
     try {
@@ -1349,8 +1368,8 @@ export function LeadDetailClient({ id }: { id: string }) {
                     <FileText size={15} className="text-sky-600" /> Pré-visualizar Proposta Criada
                   </div>
                   <div className="flex w-full sm:w-auto gap-2">
-                    <button type="button" onClick={() => window.print()} className="flex-1 sm:flex-none justify-center px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 shadow-2xs cursor-pointer">
-                      <Printer size={14} /> Imprimir / PDF
+                    <button type="button" onClick={handleDownloadSelectedQuoteHtml} className="flex-1 sm:flex-none justify-center px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 shadow-2xs cursor-pointer">
+                      <Printer size={14} /> Exportar HTML (PDF)
                     </button>
                     <button 
                       type="button"

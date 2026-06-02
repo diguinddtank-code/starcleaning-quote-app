@@ -101,6 +101,31 @@ function CalculatorContent() {
     }
   };
 
+  const handleDownloadHtml = () => {
+    const finalQuote: any = savedEstimate || {
+      ...quote,
+      id: 'manual',
+      date: new Date().toISOString(),
+      total: totalPrice,
+      customerName,
+      customerEmail,
+      customerPhone,
+      leadId: leadId || undefined
+    };
+    const estimateUrl = `${window.location.origin}/estimate/view?id=${finalQuote.id}`;
+    const htmlContent = generateQuoteEmailHtml(finalQuote, settings, estimateUrl);
+    
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Estimate_${(finalQuote.customerName || 'Client').replace(/\s+/g, '_')}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   useEffect(() => {
     if (leadId) {
       const lead = leads.find(l => l.id === leadId);
@@ -856,8 +881,8 @@ function CalculatorContent() {
                   <CheckCircle2 size={20} /> Estimate Saved Successfully
                 </div>
                 <div className="flex w-full sm:w-auto gap-2">
-                  <button onClick={() => window.print()} className="flex-1 sm:flex-none justify-center px-4 py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2">
-                    <Printer size={16} /> Print / PDF
+                  <button onClick={handleDownloadHtml} className="flex-1 sm:flex-none justify-center px-4 py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2">
+                    <Printer size={16} /> Print / Export (HTML)
                   </button>
                   <button 
                     onClick={() => {
