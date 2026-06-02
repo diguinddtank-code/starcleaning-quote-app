@@ -259,8 +259,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
       newQuote.leadId = finalLeadId;
 
       // Insert Quote
-      const fullQuoteData = {
-        id: qid,
+      const fullQuoteData: any = {
         lead_id: finalLeadId,
         customer_name: customerName,
         customer_phone: customerPhone,
@@ -280,12 +279,11 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
         created_by_email: userEmail
       };
 
-      const { error: insertError } = await supabase.from('quotes').insert(fullQuoteData);
+      let { data: insertedQuote, error: insertError } = await supabase.from('quotes').insert(fullQuoteData).select().single();
       
       if (insertError) {
-        console.warn('First insert attempt failed (likely due to missing selected_extras column). Retrying with essential schema columns.', insertError);
-        const essentialQuoteData = {
-          id: qid,
+        console.warn('First insert attempt failed. Retrying with essential schema columns.', insertError);
+        const essentialQuoteData: any = {
           lead_id: finalLeadId,
           customer_name: customerName,
           customer_phone: customerPhone,
@@ -300,22 +298,19 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
           status: 'new',
           created_by_email: userEmail
         };
-        const { error: retryError } = await supabase.from('quotes').insert(essentialQuoteData);
+        const { data: retryData, error: retryError } = await supabase.from('quotes').insert(essentialQuoteData).select().single();
         if (retryError) {
           console.error('Failed both insert attempts in Supabase quotes table:', retryError);
         } else {
-          console.log('Successfully saved quote to Supabase using essential schema columns.');
-          if (!userEmail) {
-            const anonQuotes = JSON.parse(localStorage.getItem('anon_quotes') || '[]');
-            anonQuotes.push(qid);
-            localStorage.setItem('anon_quotes', JSON.stringify(anonQuotes));
-          }
+          insertedQuote = retryData;
         }
-      } else {
-        console.log('Successfully saved quote to Supabase with full schema columns.');
+      }
+
+      if (insertedQuote && insertedQuote.id) {
+        newQuote.id = insertedQuote.id;
         if (!userEmail) {
           const anonQuotes = JSON.parse(localStorage.getItem('anon_quotes') || '[]');
-          anonQuotes.push(qid);
+          anonQuotes.push(insertedQuote.id);
           localStorage.setItem('anon_quotes', JSON.stringify(anonQuotes));
         }
       }
@@ -323,7 +318,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
 
     // Optimistically push the new quote to the local estimates list
     setSavedQuotes((prev) => {
-      const exists = prev.some(q => q.id === qid);
+      const exists = prev.some(q => q.id === newQuote.id);
       if (exists) return prev;
       return [newQuote, ...prev];
     });
