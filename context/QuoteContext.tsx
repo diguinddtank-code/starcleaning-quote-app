@@ -39,6 +39,14 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
     let subscription: any = null;
 
     const loadQuotes = async () => {
+      // 1. Fetch offline quotes
+      let localQuotes: SavedQuote[] = [];
+      try {
+        localQuotes = JSON.parse(localStorage.getItem('offline_quotes') || '[]');
+      } catch(e) {}
+      
+      let fetchedQuotes: SavedQuote[] = [];
+
       if (hasSupabase && supabase) {
         try {
           const { data: userAuth } = await supabase.auth.getUser();
@@ -58,13 +66,44 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
               await supabase.from('leads').update({ created_by_email: userEmail }).in('id', anonLeads);
               localStorage.removeItem('anon_leads');
             }
+            
+            // Auto-sync completely offline quotes
+            if (localQuotes.length > 0) {
+              const stillOffline: SavedQuote[] = [];
+              for (const lq of localQuotes) {
+                const essentialQuoteData: any = {
+                  lead_id: lq.leadId,
+                  customer_name: lq.customerName,
+                  customer_phone: lq.customerPhone,
+                  customer_email: lq.customerEmail,
+                  total: lq.total,
+                  service_type: lq.serviceType,
+                  frequency: lq.frequency,
+                  sq_ft: lq.sqFt,
+                  beds: lq.beds,
+                  baths: lq.baths,
+                  half_baths: lq.halfBaths,
+                  beds_to_change: lq.bedsToChange,
+                  status: 'new',
+                  created_by_email: userEmail
+                };
+                
+                // We'll omit 'id' since it's going to be a new insert with DB auto-generation.
+                const { error: syncErr } = await supabase.from('quotes').insert(essentialQuoteData);
+                if (syncErr) {
+                   stillOffline.push(lq);
+                }
+              }
+              localQuotes = stillOffline;
+              localStorage.setItem('offline_quotes', JSON.stringify(localQuotes));
+            }
           }
 
           const { data, error } = await query;
 
           if (data && !error) {
             // Map DB format to SavedQuote
-            const mapped = data.map(q => ({
+            fetchedQuotes = data.map(q => ({
               id: q.id,
               date: q.created_at,
               leadId: q.lead_id,
@@ -84,7 +123,6 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
               militaryDiscount: q.military_discount || false,
               manualDiscount: q.manual_discount || 0
             }));
-            setSavedQuotes(mapped);
           }
         } catch (error) {
           console.error("Failed to load quotes:", error);
@@ -98,6 +136,14 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
           })
           .subscribe();
       }
+      
+      // Combine local offline queries with DB ones
+      const combined = [...localQuotes, ...fetchedQuotes];
+      // Dedup by basic matching if needed, though they shouldn't clash if DB generates IDs.
+      // Sort by newest
+      combined.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      setSavedQuotes(combined);
     };
 
     loadQuotes();
@@ -301,6 +347,10 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
         const { data: retryData, error: retryError } = await supabase.from('quotes').insert(essentialQuoteData).select().single();
         if (retryError) {
           console.error('Failed both insert attempts in Supabase quotes table:', retryError);
+          // 4. Save entire object to offline array
+          const offline = JSON.parse(localStorage.getItem('offline_quotes') || '[]');
+          offline.push(newQuote);
+          localStorage.setItem('offline_quotes', JSON.stringify(offline));
         } else {
           insertedQuote = retryData;
         }
