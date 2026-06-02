@@ -34,71 +34,88 @@ export default function KPIPage() {
     return null;
   };
 
-  // Filter leads based on time selection
-  const filteredLeads = leads.filter(lead => {
-    const leadDate = getLeadDate(lead);
-    if (!leadDate) return filterType === 'all';
+  const isDateWithin = (dateObj: Date | null, type: FilterPeriod, customStart?: string, customEnd?: string) => {
+    if (!dateObj) return type === 'all';
 
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    if (filterType === 'all') return true;
+    if (type === 'all') return true;
 
-    if (filterType === 'this-week') {
-      // Last 7 days to always guarantee data works nicely
+    if (type === 'this-week') {
       const sevenDaysAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
-      return leadDate >= sevenDaysAgo && leadDate <= now;
+      return dateObj >= sevenDaysAgo && dateObj <= now;
     }
 
-    if (filterType === 'last-30') {
+    if (type === 'last-30') {
       const thirtyDaysAgo = new Date(todayStart.getTime() - 30 * 24 * 60 * 60 * 1000);
-      return leadDate >= thirtyDaysAgo && leadDate <= now;
+      return dateObj >= thirtyDaysAgo && dateObj <= now;
     }
 
-    if (filterType === 'this-month') {
-      return leadDate.getMonth() === now.getMonth() && leadDate.getFullYear() === now.getFullYear();
+    if (type === 'this-month') {
+      return dateObj.getMonth() === now.getMonth() && dateObj.getFullYear() === now.getFullYear();
     }
 
-    if (filterType === 'last-month') {
+    if (type === 'last-month') {
       const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      return leadDate.getMonth() === lm.getMonth() && leadDate.getFullYear() === lm.getFullYear();
+      return dateObj.getMonth() === lm.getMonth() && dateObj.getFullYear() === lm.getFullYear();
     }
 
-    if (filterType === 'custom') {
+    if (type === 'custom') {
       let match = true;
-      if (startDate) {
-        const sDate = new Date(startDate);
+      if (customStart) {
+        const sDate = new Date(customStart);
         sDate.setHours(0, 0, 0, 0);
-        match = match && leadDate >= sDate;
+        match = match && dateObj >= sDate;
       }
-      if (endDate) {
-        const eDate = new Date(endDate);
+      if (customEnd) {
+        const eDate = new Date(customEnd);
         eDate.setHours(23, 59, 59, 999);
-        match = match && leadDate <= eDate;
+        match = match && dateObj <= eDate;
       }
       return match;
     }
 
     return true;
-  });
+  };
 
-  // Calculate metrics based on the filtered results
-  const totalLeads = filteredLeads.length;
+  const getCloseDate = (lead: any) => {
+    if (lead.converted_at) return new Date(lead.converted_at);
+    if (lead.updated_at) return new Date(lead.updated_at);
+    return getLeadDate(lead); // Fallback
+  };
+
+  // Base created leads
+  const createdLeads = leads.filter(l => isDateWithin(getLeadDate(l), filterType, startDate, endDate));
   
-  const activeCount = filteredLeads.filter(l => {
+  // Calculate specific metrics
+  const totalLeads = createdLeads.length;
+
+  const activeCount = createdLeads.filter(l => {
     const s = l.ETAPA?.toLowerCase() || '';
     return s.includes('primeiro contato') || s.includes('negociando') || s.includes('agendado') || s.includes('initial contact') || s.includes('discovery') || s.includes('solution design');
   }).length;
   
-  const scheduledCount = filteredLeads.filter(l => {
+  // Find all leads that are scheduled/closed NOW, and whose close date falls into this period.
+  // This satisfies: "created last month, but closing this month -> shows as converted this month".
+  const scheduledLeads = leads.filter(l => {
     const s = l.ETAPA?.toLowerCase() || '';
-    return s.includes('agendado') || s.includes('scheduling') || s.includes('closing') || s.includes('fechado') || s.includes('agendou');
-  }).length;
+    const isClosed = s.includes('agendado') || s.includes('scheduling') || s.includes('closing') || s.includes('fechado') || s.includes('agendou');
+    if (!isClosed) return false;
+    
+    return isDateWithin(getCloseDate(l), filterType, startDate, endDate);
+  });
+  
+  const scheduledCount = scheduledLeads.length;
 
   const conversionRate = totalLeads === 0 ? 0 : Math.round((scheduledCount / totalLeads) * 100);
 
-  // Group filtered results by Stage
-  const stageDataMap = filteredLeads.reduce((acc, lead) => {
+  // Group by Stage - we'll group the combination of createdLeads and scheduledLeads for the pie chart
+  // so it correctly reflects the activity in the current period.
+  const allRelevantLeads = Array.from(new Set([...createdLeads, ...scheduledLeads]));
+  
+  const stageDataMap = allRelevantLeads.reduce((acc, lead) => {
+
     let stage = lead.ETAPA?.trim() || 'Novo';
     
     // Normalize stage names nicely
@@ -118,47 +135,50 @@ export default function KPIPage() {
     .map(([name, value]) => ({ name, value }))
     .sort((a,b) => b.value - a.value);
 
-  // Leads over time graph grouping
-  const timeMap = filteredLeads.reduce((acc, lead) => {
-    let dateStr = 'Unknown';
-    const dateObj = getLeadDate(lead);
+  // Leads over time graph grouping (Leads created vs Leads closed)
+  const timeMap = allRelevantLeads.reduce((acc, lead) => {
+    let createDateStr = 'Unknown';
+    let closeDateStr = 'Unknown';
     
-    if (dateObj) {
+    // Determine creation date
+    const createDateObj = getLeadDate(lead);
+    if (createDateObj) {
       if (filterType === 'this-week' || filterType === 'last-30') {
-        dateStr = dateObj.toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR', { day: '2-digit', month: '2-digit' });
+        createDateStr = createDateObj.toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR', { day: '2-digit', month: '2-digit' });
       } else {
-        dateStr = dateObj.toLocaleString(language === 'en' ? 'en-US' : 'pt-BR', { month: 'short', year: '2-digit' });
+        createDateStr = createDateObj.toLocaleString(language === 'en' ? 'en-US' : 'pt-BR', { month: 'short', year: '2-digit' });
+      }
+      
+      if (!acc[createDateStr]) acc[createDateStr] = { Leads: 0, ClosedLeads: 0, _date: createDateObj };
+      acc[createDateStr].Leads += 1;
+    }
+
+    // Determine close date if the lead is won/closed
+    const s = lead.ETAPA?.toLowerCase() || '';
+    const isClosed = s.includes('agendado') || s.includes('scheduling') || s.includes('closing') || s.includes('fechado') || s.includes('agendou');
+    
+    if (isClosed) {
+      // Use converted_at if available, otherwise fallback to creation date or today
+      const closeDateObj = lead.converted_at ? new Date(lead.converted_at) : (createDateObj || new Date());
+      if (closeDateObj && !isNaN(closeDateObj.getTime())) {
+        if (filterType === 'this-week' || filterType === 'last-30') {
+          closeDateStr = closeDateObj.toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR', { day: '2-digit', month: '2-digit' });
+        } else {
+          closeDateStr = closeDateObj.toLocaleString(language === 'en' ? 'en-US' : 'pt-BR', { month: 'short', year: '2-digit' });
+        }
+        
+        if (!acc[closeDateStr]) acc[closeDateStr] = { Leads: 0, ClosedLeads: 0, _date: closeDateObj };
+        acc[closeDateStr].ClosedLeads += 1;
       }
     }
-    acc[dateStr] = (acc[dateStr] || 0) + 1;
+    
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as Record<string, { Leads: number, ClosedLeads: number, _date: Date }>);
   
   const timeData = Object.entries(timeMap)
     .filter(([key]) => key !== 'Unknown')
-    .map(([name, Leads]) => ({ name, Leads }))
-    .sort((a, b) => {
-      const leadA = filteredLeads.find(l => {
-        const d = getLeadDate(l);
-        if (!d) return false;
-        const compareStr = (filterType === 'this-week' || filterType === 'last-30')
-          ? d.toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR', { day: '2-digit', month: '2-digit' })
-          : d.toLocaleString(language === 'en' ? 'en-US' : 'pt-BR', { month: 'short', year: '2-digit' });
-        return compareStr === a.name;
-      });
-      const leadB = filteredLeads.find(l => {
-        const d = getLeadDate(l);
-        if (!d) return false;
-        const compareStr = (filterType === 'this-week' || filterType === 'last-30')
-          ? d.toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR', { day: '2-digit', month: '2-digit' })
-          : d.toLocaleString(language === 'en' ? 'en-US' : 'pt-BR', { month: 'short', year: '2-digit' });
-        return compareStr === b.name;
-      });
-      
-      const dateA = leadA ? getLeadDate(leadA) : new Date(0);
-      const dateB = leadB ? getLeadDate(leadB) : new Date(0);
-      return (dateA?.getTime() || 0) - (dateB?.getTime() || 0);
-    });
+    .map(([name, data]) => ({ name, Leads: data.Leads, ClosedLeads: data.ClosedLeads, _date: data._date }))
+    .sort((a, b) => a._date.getTime() - b._date.getTime());
 
   const handleExportPDF = async () => {
     setIsExporting(true);
@@ -460,9 +480,19 @@ export default function KPIPage() {
                       <Line 
                         type="monotone" 
                         dataKey="Leads" 
+                        name={language === 'en' ? 'Leads' : 'Leads'}
                         stroke="#0ea5e9" 
                         strokeWidth={3} 
                         dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#0ea5e9' }} 
+                        activeDot={{ r: 6 }} 
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="ClosedLeads" 
+                        name={language === 'en' ? 'Closed' : 'Fechados'}
+                        stroke="#10b981" 
+                        strokeWidth={3} 
+                        dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#10b981' }} 
                         activeDot={{ r: 6 }} 
                       />
                     </LineChart>

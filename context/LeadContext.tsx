@@ -22,10 +22,20 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
     const loadLeads = async () => {
       if (hasSupabase && supabase) {
         try {
-          const { data, error } = await supabase
-            .from('leads')
-            .select('*')
-            .order('created_at', { ascending: false });
+          const { data: userAuth } = await supabase.auth.getUser();
+          const userEmail = userAuth?.user?.email || null;
+          
+          let query = supabase.from('leads').select('*').order('created_at', { ascending: false });
+          if (userEmail) {
+            // Auto-sync anonymous leads
+            const anonLeads = JSON.parse(localStorage.getItem('anon_leads') || '[]');
+            if (anonLeads.length > 0) {
+              await supabase.from('leads').update({ created_by_email: userEmail }).in('id', anonLeads);
+              localStorage.removeItem('anon_leads');
+            }
+          }
+
+          const { data, error } = await query;
 
           if (error) {
             console.error('Supabase error loading leads:', error);
@@ -77,6 +87,9 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
 
     if (hasSupabase && supabase) {
       try {
+        const { data: userAuth } = await supabase.auth.getUser();
+        const userEmail = userAuth?.user?.email || null;
+        
         const initialInsertData: any = {
           Nome: leadData.Nome,
           Email: leadData.Email,
@@ -94,7 +107,8 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
           OBSERVACOES: leadData.OBSERVACOES,
           FOLLOWUP: leadData.FOLLOWUP,
           UMSG: leadData.UMSG,
-          REMINDER_DATE: leadData.REMINDER_DATE
+          REMINDER_DATE: leadData.REMINDER_DATE,
+          created_by_email: leadData.created_by_email || userEmail
         };
 
         let { data, error } = await supabase
@@ -119,6 +133,12 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (error) throw error;
+        
+        if (!initialInsertData.created_by_email) {
+          const anonLeads = JSON.parse(localStorage.getItem('anon_leads') || '[]');
+          anonLeads.push((data as Lead).id);
+          localStorage.setItem('anon_leads', JSON.stringify(anonLeads));
+        }
         
         // Replace temp lead with DB lead
         setLeads((prev) => prev.map((l) => l.id === tempId ? (data as Lead) : l));
@@ -148,7 +168,6 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
     if (hasSupabase && supabase) {
       try {
         const payloadToSend: any = { ...finalUpdates };
-        delete payloadToSend.updated_at; // database has created_at, might not have updated_at
 
         let { error } = await supabase.from('leads').update(payloadToSend).eq('id', id);
         
@@ -156,6 +175,7 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
           console.warn('Initial update failed, retrying with safer subset (no REMINDER_DATE or updated_at)', error);
           const fallbackUpdates: any = { ...payloadToSend };
           delete fallbackUpdates.REMINDER_DATE;
+          delete fallbackUpdates.updated_at;
           const { error: retryError } = await supabase.from('leads').update(fallbackUpdates).eq('id', id);
           if (retryError) throw retryError;
         }

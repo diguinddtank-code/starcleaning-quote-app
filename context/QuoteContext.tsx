@@ -41,9 +41,26 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
     const loadQuotes = async () => {
       if (hasSupabase && supabase) {
         try {
-          const { data, error } = await supabase
-            .from('quotes')
-            .select('*');
+          const { data: userAuth } = await supabase.auth.getUser();
+          const userEmail = userAuth?.user?.email || null;
+          
+          let query = supabase.from('quotes').select('*');
+          if (userEmail) {
+            // Auto-sync anonymous quotes/leads
+            const anonQuotes = JSON.parse(localStorage.getItem('anon_quotes') || '[]');
+            if (anonQuotes.length > 0) {
+              await supabase.from('quotes').update({ created_by_email: userEmail }).in('id', anonQuotes);
+              localStorage.removeItem('anon_quotes');
+            }
+            
+            const anonLeads = JSON.parse(localStorage.getItem('anon_leads') || '[]');
+            if (anonLeads.length > 0) {
+              await supabase.from('leads').update({ created_by_email: userEmail }).in('id', anonLeads);
+              localStorage.removeItem('anon_leads');
+            }
+          }
+
+          const { data, error } = await query;
 
           if (data && !error) {
             // Map DB format to SavedQuote
@@ -229,6 +246,13 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
         } as any);
         if (newLead) {
           finalLeadId = newLead.id;
+          if (!userEmail) {
+            const anonLeads = JSON.parse(localStorage.getItem('anon_leads') || '[]');
+            if (!anonLeads.includes(finalLeadId)) {
+              anonLeads.push(finalLeadId);
+              localStorage.setItem('anon_leads', JSON.stringify(anonLeads));
+            }
+          }
         }
       }
 
@@ -252,7 +276,8 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
         total: totalPrice,
         military_discount: quote.militaryDiscount || false,
         manual_discount: quote.manualDiscount || 0,
-        status: 'new'
+        status: 'new',
+        created_by_email: userEmail
       };
 
       const { error: insertError } = await supabase.from('quotes').insert(fullQuoteData);
@@ -272,16 +297,27 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
           service_type: quote.serviceType,
           frequency: quote.frequency,
           total: totalPrice,
-          status: 'new'
+          status: 'new',
+          created_by_email: userEmail
         };
         const { error: retryError } = await supabase.from('quotes').insert(essentialQuoteData);
         if (retryError) {
           console.error('Failed both insert attempts in Supabase quotes table:', retryError);
         } else {
           console.log('Successfully saved quote to Supabase using essential schema columns.');
+          if (!userEmail) {
+            const anonQuotes = JSON.parse(localStorage.getItem('anon_quotes') || '[]');
+            anonQuotes.push(qid);
+            localStorage.setItem('anon_quotes', JSON.stringify(anonQuotes));
+          }
         }
       } else {
         console.log('Successfully saved quote to Supabase with full schema columns.');
+        if (!userEmail) {
+          const anonQuotes = JSON.parse(localStorage.getItem('anon_quotes') || '[]');
+          anonQuotes.push(qid);
+          localStorage.setItem('anon_quotes', JSON.stringify(anonQuotes));
+        }
       }
     }
 

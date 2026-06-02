@@ -3,7 +3,7 @@
 import { useLead } from '@/context/LeadContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { User, Phone, Calendar, Mail, MapPin, Edit3, Trash2, X, Search, FileText, KanbanSquare, LayoutList, ChevronRight, Plus, Loader2, Save, Send, CheckSquare, Square, Check, Layers, Sparkles, Home, Bath } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Lead } from '@/lib/types';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
@@ -535,13 +535,85 @@ export default function LeadsPage() {
     return acc;
   }, {} as Record<string, Lead[]>);
 
-  const filteredKPILeads = useMemo(() => {
-    return leads.filter(l => matchTimeFilter(l, kpiTimeRange, customStartDate, customEndDate));
-  }, [leads, kpiTimeRange, customStartDate, customEndDate]);
+  const isDateInPeriod = useCallback((d: Date | null, filter: string, customStart?: string, customEnd?: string) => {
+    if (!d) return filter === 'all';
+    if (isNaN(d.getTime())) return false;
+    
+    if (filter === 'all') return true;
 
-  const totalLeads = filteredKPILeads.length;
-  const newLeadsCount = filteredKPILeads.filter(l => getKanbanStage(l.ETAPA) === t('stage.novo')).length;
-  const activeCount = filteredKPILeads.filter(l => getKanbanStage(l.ETAPA) !== t('stage.novo')).length;
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+    const yesterdayEnd = new Date(todayEnd.getTime() - 24 * 60 * 60 * 1000);
+
+    if (filter === 'custom') {
+      const start = customStart ? new Date(customStart + 'T00:00:00') : null;
+      const end = customEnd ? new Date(customEnd + 'T23:59:59') : null;
+      const hasStart = start && !isNaN(start.getTime());
+      const hasEnd = end && !isNaN(end.getTime());
+
+      if (hasStart && hasEnd) {
+        return d >= start && d <= end;
+      } else if (hasStart) {
+        return d >= start;
+      } else if (hasEnd) {
+        return d <= end;
+      }
+      return true;
+    }
+    if (filter === 'today') {
+      return d >= todayStart && d <= todayEnd;
+    }
+    if (filter === 'yesterday') {
+      return d >= yesterdayStart && d <= yesterdayEnd;
+    }
+    if (filter === 'week') {
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return d >= sevenDaysAgo;
+    }
+    if (filter === 'month') {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      return d >= startOfMonth;
+    }
+    if (filter === 'last_month') {
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      return d >= startOfLastMonth && d <= endOfLastMonth;
+    }
+    if (filter === '90days') {
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      return d >= ninetyDaysAgo;
+    }
+    return true;
+  }, []);
+
+  const getLeadCreationDate = (l: Lead) => {
+    if (l.created_at) return new Date(l.created_at);
+    if (l.Data) return new Date(l.Data);
+    return null;
+  };
+
+  const getLeadCloseDate = (l: Lead) => {
+    if (l.converted_at) return new Date(l.converted_at);
+    if (l.updated_at) return new Date(l.updated_at);
+    return getLeadCreationDate(l);
+  };
+
+  const createdKPILeads = useMemo(() => {
+    return leads.filter(l => isDateInPeriod(getLeadCreationDate(l), kpiTimeRange, customStartDate, customEndDate));
+  }, [leads, kpiTimeRange, customStartDate, customEndDate, isDateInPeriod]);
+
+  const totalLeads = createdKPILeads.length;
+  const newLeadsCount = createdKPILeads.filter(l => getKanbanStage(l.ETAPA) === t('stage.novo')).length;
+  const activeCount = createdKPILeads.filter(l => getKanbanStage(l.ETAPA) !== t('stage.novo') && getKanbanStage(l.ETAPA) !== t('stage.closing') && getKanbanStage(l.ETAPA) !== t('stage.no_response')).length;
+
+  const convertedCount = useMemo(() => {
+    return leads.filter(l => {
+      if (getKanbanStage(l.ETAPA) !== t('stage.closing')) return false;
+      return isDateInPeriod(getLeadCloseDate(l), kpiTimeRange, customStartDate, customEndDate);
+    }).length;
+  }, [leads, kpiTimeRange, customStartDate, customEndDate, isDateInPeriod, t]);
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 md:pb-8 space-y-6">
@@ -624,19 +696,23 @@ export default function LeadsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 md:gap-4 w-full md:w-auto">
-              <div className="bg-white p-3 md:p-4 rounded-xl border border-zinc-200 shadow-sm flex flex-col items-center justify-center min-w-[100px]">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 w-full md:w-auto">
+              <div className="bg-white p-3 md:p-4 rounded-xl border border-zinc-200 shadow-sm flex flex-col items-center justify-center min-w-[90px]">
                 <span className="text-zinc-500 text-[11px] md:text-sm font-semibold uppercase tracking-wider mb-1">Total KPI</span>
                 <span className="text-xl md:text-2xl font-bold text-zinc-900">{totalLeads}</span>
               </div>
-              <div className="bg-emerald-500 p-3 md:p-4 rounded-xl border border-emerald-600 shadow-sm shadow-emerald-500/20 flex flex-col items-center justify-center min-w-[100px] relative overflow-hidden">
+              <div className="bg-emerald-500 p-3 md:p-4 rounded-xl border border-emerald-600 shadow-sm shadow-emerald-500/20 flex flex-col items-center justify-center min-w-[90px] relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-1.5"><div className="w-1.5 h-1.5 bg-white rounded-full animate-ping opacity-75"></div></div>
                 <span className="text-emerald-50 text-[11px] md:text-sm font-semibold uppercase tracking-wider mb-1">{language === 'en' ? 'New' : 'Novos'}</span>
                 <span className="text-xl md:text-2xl font-bold text-white">{newLeadsCount}</span>
               </div>
-              <div className="bg-white p-3 md:p-4 rounded-xl border border-zinc-200 shadow-sm flex flex-col items-center justify-center min-w-[100px]">
+              <div className="bg-white p-3 md:p-4 rounded-xl border border-zinc-200 shadow-sm flex flex-col items-center justify-center min-w-[90px]">
                 <span className="text-zinc-500 text-[11px] md:text-sm font-semibold uppercase tracking-wider mb-1">{t('db.active')}</span>
                 <span className="text-xl md:text-2xl font-bold text-sky-600">{activeCount}</span>
+              </div>
+              <div className="bg-white p-3 md:p-4 rounded-xl border border-zinc-200 shadow-sm flex flex-col items-center justify-center min-w-[90px]">
+                <span className="text-zinc-500 text-[11px] md:text-sm font-semibold uppercase tracking-wider mb-1">{language === 'en' ? 'Converted' : 'Convertidos'}</span>
+                <span className="text-xl md:text-2xl font-bold text-indigo-600">{convertedCount}</span>
               </div>
             </div>
           </div>

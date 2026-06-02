@@ -45,12 +45,13 @@ function CalculatorContent() {
     setIsSendingWebhook(true);
     setWebhookSentStatus('idle');
     try {
-      let finalQuote = savedEstimate;
+      // Always save to ensure we capture the most up to date configuration (e.g. manual discounts)
+      const currentLeadId = savedEstimate?.leadId || leadId;
+      const finalQuote = await saveQuoteToLead(currentLeadId, customerName, customerPhone, customerEmail);
       
-      // Auto-save if not saved yet to get a real ID for the link
-      if (!finalQuote) {
-        finalQuote = await saveQuoteToLead(leadId, customerName, customerPhone, customerEmail);
-        setSavedEstimate(finalQuote);
+      setSavedEstimate(finalQuote);
+      if (finalQuote.leadId && !leadId) {
+        setLeadId(finalQuote.leadId);
       }
 
       const WEBHOOK_URL = 'https://webhook.infra-remakingautomacoes.cloud/webhook/estimatesc';
@@ -60,7 +61,7 @@ function CalculatorContent() {
       
       const payload = {
         event: 'estimate_sent',
-        leadId: leadId || null,
+        leadId: finalQuote.leadId || null,
         customerName,
         customerEmail,
         customerPhone,
@@ -219,6 +220,9 @@ function CalculatorContent() {
     try {
       const newQuote = await saveQuoteToLead(leadId, customerName, customerPhone, customerEmail);
       setSavedEstimate(newQuote);
+      if (newQuote.leadId && !leadId) {
+        setLeadId(newQuote.leadId);
+      }
       
       setIsGenerating(false);
       setShowSuccessToast(true);
