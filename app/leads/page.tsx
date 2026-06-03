@@ -101,6 +101,21 @@ const getStageConfig = (stageName: string) => {
     };
   }
 
+  if (name.includes('not interested') || name.includes('not_interested') || name.includes('não tem interesse') || name.includes('nao tem interesse') || name.includes('desinteressado')) {
+    return {
+      borderColor: 'border-rose-200/80 hover:border-rose-300',
+      bgColor: 'bg-rose-50/10',
+      headerBg: 'bg-rose-50/70 border-rose-100/80',
+      badgeBg: 'bg-rose-100 text-rose-800 font-bold',
+      headingColor: 'text-rose-900',
+      indicatorDot: 'bg-rose-500',
+      accentBorder: 'border-l-4 border-l-rose-500',
+      shadowColor: 'hover:shadow-rose-100/40',
+      iconAccent: '👎',
+      dragOverClasses: 'border-rose-500 bg-rose-50/40 shadow-lg scale-[1.01] ring-2 ring-rose-500/15'
+    };
+  }
+
   if (name.includes('closing') || name.includes('win') || name.includes('won') || name.includes('fechar') || name.includes('agendado') || name.includes('scheduled')) {
     return {
       borderColor: 'border-violet-200/80 hover:border-violet-300',
@@ -433,6 +448,7 @@ export default function LeadsPage() {
     t('stage.solution_design'),
     t('stage.pricing_presentation'), 
     t('stage.no_response'),
+    t('stage.not_interested'),
     t('stage.closing')
   ];
 
@@ -606,7 +622,7 @@ export default function LeadsPage() {
 
   const totalLeads = createdKPILeads.length;
   const newLeadsCount = createdKPILeads.filter(l => getKanbanStage(l.ETAPA) === t('stage.novo')).length;
-  const activeCount = createdKPILeads.filter(l => getKanbanStage(l.ETAPA) !== t('stage.novo') && getKanbanStage(l.ETAPA) !== t('stage.closing') && getKanbanStage(l.ETAPA) !== t('stage.no_response')).length;
+  const activeCount = createdKPILeads.filter(l => getKanbanStage(l.ETAPA) !== t('stage.novo') && getKanbanStage(l.ETAPA) !== t('stage.closing') && getKanbanStage(l.ETAPA) !== t('stage.no_response') && getKanbanStage(l.ETAPA) !== t('stage.not_interested')).length;
 
   const convertedCount = useMemo(() => {
     return leads.filter(l => {
@@ -1348,7 +1364,7 @@ export default function LeadsPage() {
                     <div className="col-span-2 space-y-2">
                       <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">Mudar Etapa do Lead</label>
                       <div className="flex flex-wrap gap-1.5 p-1.5 bg-zinc-50 border border-zinc-200 rounded-xl">
-                        {['New Lead', 'Initial Contact & Qualification', 'Discovery', 'Solution Design', 'Pricing & Estimate Presentation', 'Closing'].map((stageName) => {
+                        {['New Lead', 'Initial Contact & Qualification', 'Discovery', 'Solution Design', 'Pricing & Estimate Presentation', 'No Response', 'Not Interested', 'Closing'].map((stageName) => {
                           const isCurrent = (editForm.ETAPA || '').toLowerCase() === stageName.toLowerCase();
                           return (
                             <button
@@ -1468,7 +1484,7 @@ export default function LeadsPage() {
                   <div className="col-span-2 space-y-2">
                     <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">Etapa Inicial do Lead</label>
                     <div className="flex flex-wrap gap-1.5 p-1.5 bg-zinc-50 border border-zinc-200 rounded-xl">
-                      {['New Lead', 'Initial Contact & Qualification', 'Discovery', 'Solution Design', 'Pricing & Estimate Presentation', 'Closing'].map((stageName) => {
+                      {['New Lead', 'Initial Contact & Qualification', 'Discovery', 'Solution Design', 'Pricing & Estimate Presentation', 'No Response', 'Not Interested', 'Closing'].map((stageName) => {
                         const isCurrent = (newLeadForm.ETAPA || 'New Lead').toLowerCase() === stageName.toLowerCase();
                         return (
                           <button
