@@ -33,6 +33,24 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
               await supabase.from('leads').update({ created_by_email: userEmail }).in('id', anonLeads);
               localStorage.removeItem('anon_leads');
             }
+            
+            // Auto-sync offline leads
+            const offlineLeads: any[] = JSON.parse(localStorage.getItem('offline_leads') || '[]');
+            if (offlineLeads.length > 0) {
+              const stillOffline = [];
+              for (const ol of offlineLeads) {
+                const olData = { ...ol, created_by_email: userEmail };
+                delete olData.id; // Let Supabase assign ID
+                const { error: syncErr } = await supabase.from('leads').insert(olData);
+                if (syncErr) {
+                  const fallbackData = { ...olData };
+                  delete fallbackData.REMINDER_DATE;
+                  const { error: rErr } = await supabase.from('leads').insert(fallbackData);
+                  if (rErr) stillOffline.push(ol);
+                }
+              }
+              localStorage.setItem('offline_leads', JSON.stringify(stillOffline));
+            }
           }
 
           const { data, error } = await query;
@@ -40,7 +58,16 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
           if (error) {
             console.error('Supabase error loading leads:', error);
           } else if (data) {
-            setLeads(data);
+            let offlineUnsynced = [];
+            try {
+              offlineUnsynced = JSON.parse(localStorage.getItem('offline_leads') || '[]');
+            } catch(e) {}
+            
+            const combined = [...offlineUnsynced, ...data];
+            // sort descending
+            combined.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            
+            setLeads(combined);
           }
         } catch (e) {
           console.error('Exception loading leads from Supabase', e);
@@ -144,11 +171,35 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
         setLeads((prev) => prev.map((l) => l.id === tempId ? (data as Lead) : l));
         return data as Lead;
       } catch (e) {
-        console.error('Failed to add lead in Supabase', e);
-        // Remove temp lead if failed
-        setLeads((prev) => prev.filter((l) => l.id !== tempId));
-        return null;
+        console.error('Failed to add lead in Supabase', e); // Error is ignored, we save to offline_leads.
+        
+        let localLeads = [];
+        try {
+          localLeads = JSON.parse(localStorage.getItem('offline_leads') || '[]');
+        } catch(ex) {}
+        
+        const initialInsertDataWithId = {
+          ...leadData,
+          id: tempId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          ETAPA: leadData.ETAPA || 'New Lead'
+        };
+        
+        localLeads.push(initialInsertDataWithId);
+        localStorage.setItem('offline_leads', JSON.stringify(localLeads));
+        
+        // We leave it in optimistic state `setLeads` because it's stored locally now.
+        return initialInsertDataWithId as Lead;
       }
+    } else {
+      let localLeads = [];
+      try {
+        localLeads = JSON.parse(localStorage.getItem('offline_leads') || '[]');
+      } catch(ex) {}
+      
+      localLeads.push(newLeadObj);
+      localStorage.setItem('offline_leads', JSON.stringify(localLeads));
     }
     return newLeadObj;
   };
@@ -164,6 +215,12 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
     }
     
     setLeads((prev) => prev.map((l) => l.id === id ? { ...l, ...finalUpdates } : l));
+    
+    try {
+      let localLeads = JSON.parse(localStorage.getItem('offline_leads') || '[]');
+      localLeads = localLeads.map((l: any) => l.id === id ? { ...l, ...finalUpdates } : l);
+      localStorage.setItem('offline_leads', JSON.stringify(localLeads));
+    } catch(e) {}
 
     if (hasSupabase && supabase) {
       try {
@@ -188,6 +245,12 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
   const deleteLead = async (id: string) => {
     // Optimistic update
     setLeads((prev) => prev.filter((l) => l.id !== id));
+    
+    try {
+      let localLeads = JSON.parse(localStorage.getItem('offline_leads') || '[]');
+      localLeads = localLeads.filter((l: any) => l.id !== id);
+      localStorage.setItem('offline_leads', JSON.stringify(localLeads));
+    } catch(e) {}
 
     if (hasSupabase && supabase) {
       try {
