@@ -84,6 +84,7 @@ export interface QuoteState {
   selectedExtras: string[];
   militaryDiscount?: boolean;
   manualDiscount?: number;
+  manualIncrease?: number;
 }
 
 export interface SavedQuote extends QuoteState {

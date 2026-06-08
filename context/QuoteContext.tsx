@@ -240,6 +240,9 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
     });
 
     let finalTotal = Math.round(total);
+    if (quote.manualIncrease && quote.manualIncrease > 0) {
+      finalTotal += quote.manualIncrease;
+    }
     if (quote.militaryDiscount) {
       finalTotal = Math.round(finalTotal * 0.9);
     }
