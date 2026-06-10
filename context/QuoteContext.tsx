@@ -121,7 +121,8 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
               status: q.status,
               selectedExtras: q.selected_extras || [],
               militaryDiscount: q.military_discount || false,
-              manualDiscount: q.manual_discount || 0
+              manualDiscount: q.manual_discount || 0,
+              manualIncrease: q.manual_increase || 0
             }));
           }
         } catch (error) {
@@ -324,6 +325,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
         total: totalPrice,
         military_discount: quote.militaryDiscount || false,
         manual_discount: quote.manualDiscount || 0,
+        manual_increase: quote.manualIncrease || 0,
         status: 'new',
         created_by_email: userEmail
       };

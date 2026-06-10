@@ -59,7 +59,8 @@ function EstimateDetail() {
           status: data.status || 'new',
           selectedExtras: data.selected_extras || [],
           militaryDiscount: data.military_discount || false,
-          manualDiscount: data.manual_discount || 0
+          manualDiscount: data.manual_discount || 0,
+          manualIncrease: data.manual_increase || 0
         };
 
         setQuote(mapped);
