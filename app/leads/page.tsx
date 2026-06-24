@@ -56,18 +56,18 @@ const getStageConfig = (stageName: string) => {
     };
   }
 
-  if (name.includes('solution') || name.includes('design')) {
+  if (name.includes('solution') || name.includes('design') || name.includes('hot leads') || name.includes('hot')) {
     return {
-      borderColor: 'border-purple-200/80 hover:border-purple-300',
-      bgColor: 'bg-purple-50/10',
-      headerBg: 'bg-purple-100/40 border-purple-200/65',
-      badgeBg: 'bg-purple-100 text-purple-800',
-      headingColor: 'text-purple-950',
-      indicatorDot: 'bg-purple-500',
-      accentBorder: 'border-l-4 border-l-purple-500',
-      shadowColor: 'hover:shadow-purple-100/40',
-      iconAccent: '🪄',
-      dragOverClasses: 'border-purple-500 bg-purple-50/40 shadow-lg scale-[1.01] ring-2 ring-purple-500/15'
+      borderColor: 'border-rose-400/80 hover:border-rose-500',
+      bgColor: 'bg-rose-50/30',
+      headerBg: 'bg-gradient-to-r from-rose-500 to-orange-500 border-rose-500 text-white',
+      badgeBg: 'bg-white/20 text-white font-black uppercase tracking-widest',
+      headingColor: 'text-white font-black',
+      indicatorDot: 'bg-white animate-pulse',
+      accentBorder: 'border-l-4 border-l-rose-500',
+      shadowColor: 'hover:shadow-rose-500/40',
+      iconAccent: '🔥',
+      dragOverClasses: 'border-rose-500 bg-rose-500/10 shadow-lg scale-[1.01] ring-2 ring-rose-500/30'
     };
   }
 
@@ -1364,7 +1364,7 @@ export default function LeadsPage() {
                     <div className="col-span-2 space-y-2">
                       <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">Mudar Etapa do Lead</label>
                       <div className="flex flex-wrap gap-1.5 p-1.5 bg-zinc-50 border border-zinc-200 rounded-xl">
-                        {['New Lead', 'Initial Contact & Qualification', 'Discovery', 'Solution Design', 'Pricing & Estimate Presentation', 'No Response', 'Not Interested', 'Closing'].map((stageName) => {
+                        {['New Lead', 'Initial Contact & Qualification', 'Discovery', 'HOT LEADS', 'Pricing & Estimate Presentation', 'No Response', 'Not Interested', 'Closing'].map((stageName) => {
                           const isCurrent = (editForm.ETAPA || '').toLowerCase() === stageName.toLowerCase();
                           return (
                             <button
@@ -1484,7 +1484,7 @@ export default function LeadsPage() {
                   <div className="col-span-2 space-y-2">
                     <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">Etapa Inicial do Lead</label>
                     <div className="flex flex-wrap gap-1.5 p-1.5 bg-zinc-50 border border-zinc-200 rounded-xl">
-                      {['New Lead', 'Initial Contact & Qualification', 'Discovery', 'Solution Design', 'Pricing & Estimate Presentation', 'No Response', 'Not Interested', 'Closing'].map((stageName) => {
+                      {['New Lead', 'Initial Contact & Qualification', 'Discovery', 'HOT LEADS', 'Pricing & Estimate Presentation', 'No Response', 'Not Interested', 'Closing'].map((stageName) => {
                         const isCurrent = (newLeadForm.ETAPA || 'New Lead').toLowerCase() === stageName.toLowerCase();
                         return (
                           <button

@@ -61,7 +61,7 @@ const translations: Record<Language, Record<string, string>> = {
     'stage.novo': 'New Lead',
     'stage.initial_contact': 'Initial Contact & Qualification',
     'stage.discovery': 'Discovery',
-    'stage.solution_design': 'Solution Design',
+    'stage.solution_design': 'HOT LEADS',
     'stage.pricing_presentation': 'Pricing & Estimate Presentation',
     'stage.no_response': 'No Response',
     'stage.not_interested': 'Not Interested',
@@ -136,7 +136,7 @@ const translations: Record<Language, Record<string, string>> = {
     'stage.novo': 'New Lead',
     'stage.initial_contact': 'Initial Contact & Qualification',
     'stage.discovery': 'Discovery',
-    'stage.solution_design': 'Solution Design',
+    'stage.solution_design': 'HOT LEADS',
     'stage.pricing_presentation': 'Pricing & Estimate Presentation',
     'stage.no_response': 'No Response',
     'stage.not_interested': 'Not Interested',
@@ -194,7 +194,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     
     if (s.includes('initial contact') || s.includes('qualification') || s.includes('initial') || s.includes('contato') || s.includes('contact')) return t('stage.initial_contact');
     if (s.includes('discovery')) return t('stage.discovery');
-    if (s.includes('solution') || s.includes('design')) return t('stage.solution_design');
+    if (s.includes('solution') || s.includes('design') || s.includes('hot leads') || s.includes('hot')) return t('stage.solution_design');
     if (s.includes('pricing') || s.includes('presentation') || s.includes('estimate') || s.includes('quote') || s.includes('cotado')) return t('stage.pricing_presentation');
     if (s.includes('não responde') || s.includes('nao responde') || s.includes('no response') || s.includes('no_response')) return t('stage.no_response');
     if (s.includes('not interested') || s.includes('not_interested') || s.includes('não tem interesse') || s.includes('nao tem interesse') || s.includes('desinteressado')) return t('stage.not_interested');

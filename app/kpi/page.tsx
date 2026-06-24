@@ -93,7 +93,7 @@ export default function KPIPage() {
 
   const activeCount = createdLeads.filter(l => {
     const s = l.ETAPA?.toLowerCase() || '';
-    return s.includes('primeiro contato') || s.includes('negociando') || s.includes('agendado') || s.includes('initial contact') || s.includes('discovery') || s.includes('solution design');
+    return s.includes('primeiro contato') || s.includes('negociando') || s.includes('agendado') || s.includes('initial contact') || s.includes('discovery') || s.includes('solution design') || s.includes('hot leads') || s.includes('hot');
   }).length;
   
   // Find all leads that are scheduled/closed NOW, and whose close date falls into this period.
@@ -123,7 +123,8 @@ export default function KPIPage() {
     else if (stage.toLowerCase().includes('agendado') || stage.toLowerCase().includes('closing') || stage.toLowerCase().includes('fechado')) stage = language === 'en' ? 'Closed / Scheduled' : 'Agendado / Fechado';
     else if (stage.toLowerCase().includes('negociando') || stage.toLowerCase().includes('pricing') || stage.toLowerCase().includes('presentation') || stage.toLowerCase().includes('quote')) stage = language === 'en' ? 'Negotiation' : 'Em Negociação';
     else if (stage.toLowerCase().includes('primeiro contato') || stage.toLowerCase().includes('initial contact') || stage.toLowerCase().includes('qualification')) stage = language === 'en' ? 'Initial Contact' : 'Primeiro Contato';
-    else if (stage.toLowerCase().includes('discovery') || stage.toLowerCase().includes('solution')) stage = language === 'en' ? 'Discovery' : 'Alinhamento';
+    else if (stage.toLowerCase().includes('discovery')) stage = language === 'en' ? 'Discovery' : 'Alinhamento';
+    else if (stage.toLowerCase().includes('solution') || stage.toLowerCase().includes('hot')) stage = language === 'en' ? 'Hot Leads' : 'Hot Leads';
     else if (stage.toLowerCase().includes('não responde') || stage.toLowerCase().includes('no response')) stage = language === 'en' ? 'No Response' : 'Sem Resposta';
     else stage = language === 'en' ? 'Others' : 'Outros';
 
