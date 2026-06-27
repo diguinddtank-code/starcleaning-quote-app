@@ -262,6 +262,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
       id: qid,
       date: new Date().toISOString(),
       total: totalPrice,
+      leadId,
       customerName,
       customerPhone,
       customerEmail,
@@ -296,6 +297,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
         } as any);
         if (newLead) {
           finalLeadId = newLead.id;
+          newQuote.leadId = finalLeadId;
           if (!userEmail) {
             const anonLeads = JSON.parse(localStorage.getItem('anon_leads') || '[]');
             if (!anonLeads.includes(finalLeadId)) {

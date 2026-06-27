@@ -128,7 +128,16 @@ export function LeadDetailClient({ id }: { id: string }) {
     const firstName = lead.Nome?.split(' ')[0] || '';
     const city = lead.Cidade || 'sua região';
     const q = leadQuotes[0];
-    const moneyVal = q ? `$${q.total}` : (lead.Inicial ? `$${lead.Inicial}` : 'um valor personalizado');
+    let moneyVal = 'um valor personalizado';
+    if (q && q.total) {
+      moneyVal = `$${q.total}`;
+    } else if (lead.Inicial) {
+      if (String(lead.Inicial).toLowerCase().includes('sem preço') || String(lead.Inicial).toLowerCase().includes('sem preco')) {
+        moneyVal = 'um valor personalizado';
+      } else {
+        moneyVal = String(lead.Inicial).startsWith('$') ? String(lead.Inicial) : `$${lead.Inicial}`;
+      }
+    }
     const freqName = lead.Frequencia === 'weekly' ? 'semanal' : lead.Frequencia === 'bi-weekly' ? 'quinzenal' : lead.Frequencia === 'monthly' ? 'mensal' : 'única';
     const serviceName = lead.Service === 'deep' ? 'Limpeza Pesada (Deep Clean)' : lead.Service === 'move' ? 'Limpeza de Mudança (Move-In/Out)' : 'Limpeza Residencial';
 
@@ -279,10 +288,13 @@ export function LeadDetailClient({ id }: { id: string }) {
   const getStatusBadgeStyles = (status?: string) => {
     const s = status?.toLowerCase() || '';
     if (s.includes('hot leads') || s.includes('hot') || s.includes('solution design')) return 'bg-rose-500 text-white font-bold border-rose-600 shadow-sm animate-pulse';
-    if (s.includes('agendado')) return 'bg-purple-100/50 text-purple-700 border-purple-200';
-    if (s.includes('novo')) return 'bg-emerald-50 text-emerald-700 border-emerald-250';
-    if (s.includes('interesse') || s.includes('perdido')) return 'bg-zinc-100 text-zinc-600 border-zinc-200';
-    if (s.includes('contato') || s.includes('responde') || s.includes('nego') || s.includes('depósito')) return 'bg-sky-50 text-sky-700 border-sky-200';
+    if (s.includes('agendado') || s.includes('closing')) return 'bg-purple-100/50 text-purple-700 border-purple-200';
+    if (s.includes('novo') || s.includes('new lead')) return 'bg-emerald-500 text-white border-emerald-600 shadow-sm';
+    if (s.includes('interesse') || s.includes('not interest') || s.includes('perdido')) return 'bg-zinc-100 text-zinc-600 border-zinc-200';
+    if (s.includes('contato') || s.includes('contact') || s.includes('initial')) return 'bg-sky-50 text-sky-700 border-sky-200';
+    if (s.includes('descoberta') || s.includes('discovery') || s.includes('nego') || s.includes('stand')) return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+    if (s.includes('pricing') || s.includes('presentation') || s.includes('estimate') || s.includes('quote')) return 'bg-amber-50 text-amber-700 border-amber-200';
+    if (s.includes('responde') || s.includes('no response')) return 'bg-zinc-800 text-zinc-100 border-zinc-900';
     return 'bg-zinc-100 text-zinc-650 border-zinc-200';
   };
 
@@ -293,7 +305,16 @@ export function LeadDetailClient({ id }: { id: string }) {
   const firstName = lead.Nome?.split(' ')[0] || '';
   const city = lead.Cidade || (language === 'en' ? 'your area' : 'sua região');
   const q = leadQuotes[0];
-  const moneyVal = q ? `$${q.total}` : (lead.Inicial ? `$${lead.Inicial}` : (language === 'en' ? 'a professional estimate' : 'um valor personalizado'));
+  let moneyVal = (language === 'en' ? 'a professional estimate' : 'um valor personalizado');
+  if (q && q.total) {
+    moneyVal = `$${q.total}`;
+  } else if (lead.Inicial) {
+    if (String(lead.Inicial).toLowerCase().includes('sem preço') || String(lead.Inicial).toLowerCase().includes('sem preco')) {
+      moneyVal = (language === 'en' ? 'a professional estimate' : 'um valor personalizado');
+    } else {
+      moneyVal = String(lead.Inicial).startsWith('$') ? String(lead.Inicial) : `$${lead.Inicial}`;
+    }
+  }
   const freqName = lead.Frequencia === 'weekly' ? (language === 'en' ? 'weekly' : 'semanal') : lead.Frequencia === 'bi-weekly' ? (language === 'en' ? 'bi-weekly' : 'quinzenal') : lead.Frequencia === 'monthly' ? (language === 'en' ? 'monthly' : 'mensal') : (language === 'en' ? 'one-time' : 'única');
   const serviceNameName = lead.Service === 'deep' ? (language === 'en' ? 'Deep Cleaning (Deep Clean)' : 'Limpeza Pesada (Deep Clean)') : lead.Service === 'move' ? (language === 'en' ? 'Move-In/Out Cleaning' : 'Limpeza de Mudança (Move-In/Out)') : (language === 'en' ? 'Premium Residential Cleaning' : 'Limpeza Residencial');
 
@@ -809,7 +830,11 @@ export function LeadDetailClient({ id }: { id: string }) {
                     <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-3xs">
                       <h4 className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1.5 font-sans">Valor Estimado</h4>
                       <div className="text-lg font-black text-emerald-700 tracking-tight font-sans">
-                        {lead.Inicial ? (String(lead.Inicial).startsWith('$') ? lead.Inicial : `$${lead.Inicial}`) : '$0'}
+                        {lead.Inicial ? (
+                          String(lead.Inicial).toLowerCase().includes('sem preço') || String(lead.Inicial).toLowerCase().includes('sem preco')
+                            ? (language === 'en' ? 'No Price' : 'Sem Preço')
+                            : (String(lead.Inicial).startsWith('$') ? lead.Inicial : `$${lead.Inicial}`)
+                        ) : '$0'}
                       </div>
                     </div>
                   </div>

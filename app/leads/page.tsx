@@ -2,6 +2,7 @@
 
 import { useLead } from '@/context/LeadContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useQuote } from '@/context/QuoteContext';
 import { User, Phone, Calendar, Mail, MapPin, Edit3, Trash2, X, Search, FileText, KanbanSquare, LayoutList, ChevronRight, Plus, Loader2, Save, Send, CheckSquare, Square, Check, Layers, Sparkles, Home, Bath } from 'lucide-react';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Lead } from '@/lib/types';
@@ -223,6 +224,7 @@ const matchTimeFilter = (l: Lead, filter: string, customStart?: string, customEn
 
 export default function LeadsPage() {
   const { leads, deleteLead, updateLead, addLead } = useLead();
+  const { savedQuotes } = useQuote();
   const { language, t, translateStage } = useLanguage();
   const [filterQuery, setFilterQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -244,6 +246,19 @@ export default function LeadsPage() {
   const [inlineValue, setInlineValue] = useState('');
   const [isInlineSaving, setIsInlineSaving] = useState(false);
 
+  const getDisplayPrice = useCallback((lead: Lead) => {
+    const leadQuote = savedQuotes.find(q => q.leadId === lead.id);
+    if (leadQuote && leadQuote.total) {
+      return `$${leadQuote.total}`;
+    }
+    const val = lead.Inicial || '0';
+    if (val.startsWith('$')) return val;
+    if (val.toLowerCase().includes('formulário sem preço') || val.toLowerCase().includes('formulario sem preco')) {
+      return language === 'en' ? 'No Price' : 'Sem Preço';
+    }
+    return `$${val}`;
+  }, [savedQuotes, language]);
+
   const parseFloatValue = (val?: string | number): number => {
     if (val === undefined || val === null) return 0;
     if (typeof val === 'number') return val;
@@ -252,9 +267,9 @@ export default function LeadsPage() {
     return isNaN(parsed) ? 0 : parsed;
   };
 
-  const getColumnTotalValue = (columnLeads: Lead[]): number => {
-    return columnLeads.reduce((sum, lead) => sum + parseFloatValue(lead.Inicial), 0);
-  };
+  const getColumnTotalValue = useCallback((columnLeads: Lead[]): number => {
+    return columnLeads.reduce((sum, lead) => sum + parseFloatValue(getDisplayPrice(lead)), 0);
+  }, [getDisplayPrice]);
 
   const toggleSelectLead = (leadId: string) => {
     setSelectedLeadIds(prev => 
@@ -523,11 +538,15 @@ export default function LeadsPage() {
 
   const getStatusColor = (status?: string) => {
     const s = status?.toLowerCase() || '';
-    if (s.includes('agendado')) return 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100';
+    if (s.includes('hot leads') || s.includes('hot') || s.includes('solution design')) return 'bg-rose-500 text-white border-rose-600 shadow-sm animate-pulse';
+    if (s.includes('agendado') || s.includes('closing')) return 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200';
     if (s.includes('deposit') || s.includes('depósito') || s.includes('deposito')) return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
-    if (s.includes('novo')) return 'bg-emerald-500 text-white border-emerald-600 shadow-sm shadow-emerald-500/30 hover:bg-emerald-600';
-    if (s.includes('sem interesse') || s.includes('not interest') || s.includes('perdido')) return 'bg-zinc-100 text-zinc-600 border-zinc-200 hover:bg-zinc-200';
-    if (s.includes('contato') || s.includes('stand') || s.includes('nego') || s.includes('responde')) return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
+    if (s.includes('novo') || s.includes('new lead')) return 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200';
+    if (s.includes('sem interesse') || s.includes('not interest') || s.includes('perdido')) return 'bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-200';
+    if (s.includes('contato') || s.includes('contact') || s.includes('initial')) return 'bg-sky-100 text-sky-800 border-sky-200 hover:bg-sky-200';
+    if (s.includes('descoberta') || s.includes('discovery') || s.includes('nego') || s.includes('stand')) return 'bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200';
+    if (s.includes('pricing') || s.includes('presentation') || s.includes('estimate') || s.includes('quote')) return 'bg-pink-100 text-pink-800 border-pink-200 hover:bg-pink-200';
+    if (s.includes('responde') || s.includes('no response')) return 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200';
     return 'bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100';
   };
 
@@ -918,9 +937,9 @@ export default function LeadsPage() {
                         </button>
                       </div>
 
-                      {lead.Inicial && (
+                      {(lead.Inicial || savedQuotes.find(q => q.leadId === lead.id)) && (
                         <div className="flex items-center justify-between text-[10px] text-zinc-400 mt-0.5">
-                          <span className="text-sky-700 bg-sky-50/70 border border-sky-100/60 px-1 py-0.2 rounded font-extrabold">${lead.Inicial}</span>
+                          <span className="text-sky-700 bg-sky-50/70 border border-sky-100/60 px-1 py-0.2 rounded font-extrabold">{getDisplayPrice(lead)}</span>
                           <Link 
                             href={`/leads/${lead.id}`}
                             className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-sky-650 font-semibold transition-all cursor-pointer"
@@ -1118,7 +1137,7 @@ export default function LeadsPage() {
                         <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
                           <span className="flex items-center gap-0.5"><Home size={10} className="text-zinc-400" />{lead.Quartos || '-'} Bd</span>
                           <span className="flex items-center gap-0.5"><Bath size={10} className="text-zinc-400" />{lead.Banheiros || '-'} Ba</span>
-                          <span className="font-bold text-emerald-600 px-1 border border-emerald-100 bg-emerald-50 rounded">${lead.Inicial || '0'}</span>
+                          <span className="font-bold text-emerald-600 px-1 border border-emerald-100 bg-emerald-50 rounded">{getDisplayPrice(lead)}</span>
                         </div>
                       </div>
                     </td>
