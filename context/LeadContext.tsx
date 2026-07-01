@@ -134,6 +134,7 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
           OBSERVACOES: leadData.OBSERVACOES,
           FOLLOWUP: leadData.FOLLOWUP,
           UMSG: leadData.UMSG,
+          is_promo: leadData.is_promo,
           REMINDER_DATE: leadData.REMINDER_DATE,
           created_by_email: leadData.created_by_email || userEmail
         };
@@ -145,9 +146,10 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
           .single();
 
         if (error) {
-          console.warn('Initial insert on leads failed (could be missing REMINDER_DATE), retrying without REMINDER_DATE Column...', error);
+          console.warn('Initial insert on leads failed, retrying with safer subset...', error);
           const fallbackInsertData = { ...initialInsertData };
           delete fallbackInsertData.REMINDER_DATE;
+          delete fallbackInsertData.is_promo;
           
           const retryResult = await supabase
             .from('leads')
@@ -229,10 +231,11 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
         let { error } = await supabase.from('leads').update(payloadToSend).eq('id', id);
         
         if (error) {
-          console.warn('Initial update failed, retrying with safer subset (no REMINDER_DATE or updated_at)', error);
+          console.warn('Initial update failed, retrying with safer subset (no REMINDER_DATE or updated_at or is_promo)', error);
           const fallbackUpdates: any = { ...payloadToSend };
           delete fallbackUpdates.REMINDER_DATE;
           delete fallbackUpdates.updated_at;
+          delete fallbackUpdates.is_promo;
           const { error: retryError } = await supabase.from('leads').update(fallbackUpdates).eq('id', id);
           if (retryError) throw retryError;
         }

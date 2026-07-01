@@ -584,8 +584,14 @@ export function LeadDetailClient({ id }: { id: string }) {
             </div>
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-xl md:text-2.5xl font-black text-zinc-900 tracking-tight leading-none">
+                <h1 className="text-xl md:text-2.5xl font-black text-zinc-900 tracking-tight leading-none flex items-center gap-2">
                   {lead.Nome || (language === 'en' ? 'Unnamed Lead' : 'Lead Sem Nome')}
+                  {lead.is_promo && (
+                    <span className="shrink-0 inline-flex items-center gap-1 bg-rose-100 text-rose-700 text-xs font-black uppercase tracking-widest px-2 py-1 rounded-full border border-rose-200 shadow-sm">
+                      <Sparkles size={12} className="text-rose-500" />
+                      Promo
+                    </span>
+                  )}
                 </h1>
                 <select
                   value={lead.ETAPA || 'New Lead'}

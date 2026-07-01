@@ -923,10 +923,16 @@ export default function LeadsPage() {
                         )}
                         <Link 
                           href={`/leads/${lead.id}`} 
-                          className="font-bold text-zinc-800 text-xs hover:text-sky-650 truncate transition-colors pr-2 leading-snug flex-1"
+                          className="font-bold text-zinc-800 text-xs hover:text-sky-650 truncate transition-colors pr-2 leading-snug flex-1 flex items-center gap-1.5"
                           title={lead.Nome || 'Unnamed Lead'}
                         >
-                          {lead.Nome || 'Unnamed Lead'}
+                          <span className="truncate">{lead.Nome || 'Unnamed Lead'}</span>
+                          {lead.is_promo && (
+                            <span className="shrink-0 inline-flex items-center bg-rose-100 text-rose-700 text-[8px] font-black uppercase tracking-widest px-1 py-0.5 rounded-full border border-rose-200">
+                              <Sparkles size={6} className="text-rose-500 mr-0.5" />
+                              Promo
+                            </span>
+                          )}
                         </Link>
                         <button 
                           onClick={() => handleEditClick(lead)}
@@ -1118,7 +1124,15 @@ export default function LeadsPage() {
                     </td>
                     <td className="px-3 py-2.5 align-middle w-[250px]">
                       <div className="flex flex-col gap-0.5">
-                        <Link href={`/leads/${lead.id}`} className="font-bold text-zinc-900 text-[13px] hover:text-sky-600 truncate block max-w-[200px]" title={lead.Nome || 'Unnamed'}>{lead.Nome || 'Unnamed'}</Link>
+                        <div className="flex items-center gap-2 max-w-[200px]">
+                          <Link href={`/leads/${lead.id}`} className="font-bold text-zinc-900 text-[13px] hover:text-sky-600 truncate block" title={lead.Nome || 'Unnamed'}>{lead.Nome || 'Unnamed'}</Link>
+                          {lead.is_promo && (
+                            <span className="shrink-0 inline-flex items-center gap-0.5 bg-rose-100 text-rose-700 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-rose-200">
+                              <Sparkles size={8} className="text-rose-500" />
+                              Promo
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 text-zinc-500 text-[10.5px]">
                           {lead.Telefone ? <span className="flex items-center gap-0.5"><Phone size={10} className="text-zinc-400" />{lead.Telefone}</span> : null}
                           {lead.Email ? <span className="flex items-center gap-0.5 truncate max-w-[120px]" title={lead.Email}><Mail size={10} className="text-zinc-400" />{lead.Email}</span> : null}

@@ -68,6 +68,7 @@ export interface Lead {
   OBSERVACOES?: string;
   FOLLOWUP?: string;
   UMSG?: string;
+  is_promo?: boolean;
   REMINDER_DATE?: string;
   converted_at?: string;
   created_by_email?: string;
