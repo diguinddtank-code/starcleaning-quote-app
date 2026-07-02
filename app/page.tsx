@@ -55,14 +55,16 @@ export default function DashboardPage() {
 
   const opportunities = leads.filter(l => {
     const stage = translateStage(l.ETAPA || '').toLowerCase();
-    if (stage.includes('closing')) return false;
+    
+    if (stage.includes('closing') || stage.includes('no response') || stage.includes('not interested')) return false;
 
     const daysSinceLastMessage = Math.abs(getDaysDifference(l.UMSG));
     
     if (stage.includes('new lead')) return true;
-    if (stage.includes('no response') || stage.includes('não responde') || stage.includes('nao responde')) return true;
     if (stage.includes('initial contact') && daysSinceLastMessage >= 1) return true;
     if (stage.includes('discovery') && daysSinceLastMessage >= 2) return true;
+    if (stage.includes('hot leads') && daysSinceLastMessage >= 2) return true;
+    if (stage.includes('pricing') && daysSinceLastMessage >= 2) return true;
     return false;
   }).sort((a, b) => Math.abs(getDaysDifference(a.UMSG)) - Math.abs(getDaysDifference(b.UMSG))).slice(0, 4);
 
