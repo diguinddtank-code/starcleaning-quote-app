@@ -12,9 +12,18 @@ const COLORS = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#64748b'
 type FilterPeriod = 'all' | 'this-week' | 'last-30' | 'this-month' | 'last-month' | 'custom';
 
 export default function KPIPage() {
-  const { leads } = useLead();
+  const { leads: rawLeads } = useLead();
   const { language } = useLanguage();
   const [isExporting, setIsExporting] = useState(false);
+
+  const uniqueEmails = new Set();
+  const leads = rawLeads.filter(lead => {
+    if (!lead.Email) return true;
+    const email = lead.Email.toLowerCase().trim();
+    if (uniqueEmails.has(email)) return false;
+    uniqueEmails.add(email);
+    return true;
+  });
   
   // Date states
   const [filterType, setFilterType] = useState<FilterPeriod>('all');

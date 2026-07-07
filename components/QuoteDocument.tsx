@@ -122,6 +122,7 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
     '': 'Not Selected',
     residential: 'Residential',
     deep: 'Deep Clean',
+    ttb: 'Top to Bottom',
     move: 'Move In/Out',
     vacation: 'Vacation/Airbnb',
     commercial: 'Commercial',
@@ -174,8 +175,9 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
 
   const serviceDescriptions: Record<string, string[]> = {
     residential: ["General dusting & wipe down of surfaces", "Vacuum & mop all accessible floors", "Kitchen counters & exterior of appliances", "Full bathroom sanitization", "Empty small trash bins"],
-    deep: ["Everything in Residential, PLUS:", "Baseboards & window sills wiped", "Ceiling fans & light fixtures dusted", "Extra scrubbing in high-traffic bathrooms", "Heavy dusting & cobweb removal"],
-    move: ["Everything in Deep Clean, PLUS:", "Inside all empty cabinets and drawers", "Inside all empty closets", "Inside & behind appliances (if moved)"],
+    deep: ["Everything in Residential, PLUS:", "Detailed scrubbing of kitchen and bathrooms", "Dusting reachable surfaces", "Sanitizing high touch areas"],
+    ttb: ["Everything in Deep Clean, PLUS:", "Baseboards & window sills wiped by hand", "Ceiling fans & light fixtures dusted", "Extra scrubbing in high-traffic bathrooms", "Heavy dusting & cobweb removal"],
+    move: ["Everything in TTB, PLUS:", "Inside all empty cabinets and drawers", "Inside all empty closets", "Inside & behind appliances (if moved)"],
     vacation: ["Check for damages & left items", "Launder all linens & remake beds", "Restock supplies (toilet paper, soap)", "Detailed clean & sanitization for next guest"],
     commercial: ["Reception & common areas", "Desk & cubicle wipe down", "Restroom maintenance", "Breakroom cleaning", "Trash removal & flooring"],
     construction: ["Heavy dust removal from all surfaces", "Paint drop & sticker removal", "Vacuum inside cabinets & drawers", "Detailed trim & baseboard wipe down"]

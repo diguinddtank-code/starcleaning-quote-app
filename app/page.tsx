@@ -15,10 +15,19 @@ import {
 import { motion } from 'motion/react';
 
 export default function DashboardPage() {
-  const { leads } = useLead();
+  const { leads: rawLeads } = useLead();
   const { savedQuotes } = useQuote();
   const { user } = useAuth();
   const { language, t, translateStage } = useLanguage();
+
+  const uniqueEmails = new Set();
+  const leads = rawLeads.filter(lead => {
+    if (!lead.Email) return true;
+    const email = lead.Email.toLowerCase().trim();
+    if (uniqueEmails.has(email)) return false;
+    uniqueEmails.add(email);
+    return true;
+  });
 
   // Metrics
   const totalLeads = leads.length;

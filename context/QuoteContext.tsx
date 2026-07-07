@@ -192,7 +192,8 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
          else if (quote.frequency === 'bi-weekly') total = tier.recurring.biWeekly.max;
          else if (quote.frequency === 'monthly') total = tier.recurring.monthly.max;
       } else {
-         if (quote.serviceType === 'deep') total = detail.deep.max;
+         if (quote.serviceType === 'ttb') total = detail.deep.max;
+         else if (quote.serviceType === 'deep') total = detail.general.max;
          else if (quote.serviceType === 'move') total = detail.moveInOut.max;
          else if (quote.serviceType === 'residential') total = detail.general.max;
          else {
@@ -214,7 +215,8 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
       total += quote.baths * settings.bathPrice;
       total += quote.halfBaths * settings.halfBathPrice;
 
-      if (quote.serviceType === 'deep') total *= settings.deepCleanMultiplier;
+      if (quote.serviceType === 'ttb') total *= settings.deepCleanMultiplier;
+      else if (quote.serviceType === 'deep') total *= 1.2;
       else if (quote.serviceType === 'move') total *= settings.moveInOutMultiplier;
       else if (quote.serviceType === 'vacation') total *= settings.vacationMultiplier;
       else if (quote.serviceType === 'commercial') total *= settings.commercialMultiplier;

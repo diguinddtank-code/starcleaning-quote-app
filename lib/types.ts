@@ -1,4 +1,4 @@
-export type ServiceType = '' | 'residential' | 'deep' | 'move' | 'vacation' | 'commercial' | 'construction';
+export type ServiceType = '' | 'residential' | 'deep' | 'ttb' | 'move' | 'vacation' | 'commercial' | 'construction';
 export type ServiceFrequency = 'one-time' | 'weekly' | 'bi-weekly' | 'monthly';
 
 export interface PricingTierDetails {
