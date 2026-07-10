@@ -242,7 +242,14 @@ export default function DashboardPage() {
                           <Calendar size={12} /> {timeString}
                         </span>
                       </div>
-                      <p className="font-bold text-zinc-900 group-hover:text-emerald-700 truncate">{lead.Nome || 'Cliente sem nome'}</p>
+                      <p className="font-bold text-zinc-900 group-hover:text-emerald-700 truncate flex items-center gap-1.5">
+                        <span className="truncate">{lead.Nome || 'Cliente sem nome'}</span>
+                        {lead.is_referral && (
+                          <span className="shrink-0 inline-flex items-center gap-0.5 bg-violet-100 text-violet-700 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-violet-200">
+                            Indicação
+                          </span>
+                        )}
+                      </p>
                       <p className="text-xs text-zinc-500 line-clamp-2 mt-1 mb-3">{lead.FOLLOWUP || 'Sem detalhes'}</p>
                     </div>
                     <div className="text-emerald-600 font-semibold text-xs flex items-center group-hover:underline mt-auto">
@@ -286,7 +293,14 @@ export default function DashboardPage() {
                         </span>
                       )}
                     </div>
-                    <p className="font-bold text-zinc-900 group-hover:text-sky-700 truncate">{lead.Nome || 'Cliente sem nome'}</p>
+                    <p className="font-bold text-zinc-900 group-hover:text-sky-700 truncate flex items-center gap-1.5">
+                      <span className="truncate">{lead.Nome || 'Cliente sem nome'}</span>
+                      {lead.is_referral && (
+                        <span className="shrink-0 inline-flex items-center gap-0.5 bg-violet-100 text-violet-700 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-violet-200">
+                          Indicação
+                        </span>
+                      )}
+                    </p>
                     <p className="text-xs text-zinc-500 truncate mb-3">{lead.Telefone || lead.Email || 'Sem contato'}</p>
                     <div className="text-sky-600 font-semibold text-xs flex items-center group-hover:underline">
                       {language === 'en' ? 'View details' : 'Ver detalhes'} <ArrowRight size={12} className="ml-1" />
@@ -325,8 +339,13 @@ export default function DashboardPage() {
                       {(lead.Nome?.[0] || 'U').toUpperCase()}
                     </div>
                     <div className="flex flex-col">
-                      <p className="text-sm font-bold text-zinc-900 group-hover:text-sky-900 transition-colors">
-                        {lead.Nome || 'Sem Nome'}
+                      <p className="text-sm font-bold text-zinc-900 group-hover:text-sky-900 transition-colors flex items-center gap-1.5">
+                        <span className="truncate">{lead.Nome || 'Sem Nome'}</span>
+                        {lead.is_referral && (
+                          <span className="shrink-0 inline-flex items-center gap-0.5 bg-violet-100 text-violet-700 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-violet-200">
+                            Indicação
+                          </span>
+                        )}
                       </p>
                       <p className="text-xs text-zinc-500">{lead.Telefone || lead.Email || 'Sem contato'}</p>
                     </div>

@@ -592,6 +592,11 @@ export function LeadDetailClient({ id }: { id: string }) {
                       Promo
                     </span>
                   )}
+                  {lead.is_referral && (
+                    <span className="shrink-0 inline-flex items-center gap-1 bg-violet-100 text-violet-700 text-xs font-black uppercase tracking-widest px-2 py-1 rounded-full border border-violet-200 shadow-sm">
+                      Indicação
+                    </span>
+                  )}
                 </h1>
                 <select
                   value={lead.ETAPA || 'New Lead'}

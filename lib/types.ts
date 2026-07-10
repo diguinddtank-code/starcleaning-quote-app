@@ -69,6 +69,7 @@ export interface Lead {
   FOLLOWUP?: string;
   UMSG?: string;
   is_promo?: boolean;
+  is_referral?: boolean;
   REMINDER_DATE?: string;
   converted_at?: string;
   created_by_email?: string;

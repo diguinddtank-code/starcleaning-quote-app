@@ -135,6 +135,7 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
           FOLLOWUP: leadData.FOLLOWUP,
           UMSG: leadData.UMSG,
           is_promo: leadData.is_promo,
+          is_referral: leadData.is_referral,
           REMINDER_DATE: leadData.REMINDER_DATE,
           created_by_email: leadData.created_by_email || userEmail
         };

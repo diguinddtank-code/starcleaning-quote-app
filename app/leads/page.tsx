@@ -380,7 +380,8 @@ export default function LeadsPage() {
         OBSERVACOES: newLeadForm.OBSERVACOES || '',
         FOLLOWUP: newLeadForm.FOLLOWUP || '',
         UMSG: newLeadForm.UMSG || '',
-        REMINDER_DATE: newLeadForm.REMINDER_DATE || ''
+        REMINDER_DATE: newLeadForm.REMINDER_DATE || '',
+        is_referral: newLeadForm.is_referral || false
       });
       setIsAddingLead(false);
       setNewLeadForm({ ETAPA: 'New Lead', Service: 'residential', Frequencia: 'one-time', Quartos: '3', Banheiros: '2' });
@@ -923,7 +924,7 @@ export default function LeadsPage() {
                         )}
                         <Link 
                           href={`/leads/${lead.id}`} 
-                          className="font-bold text-zinc-800 text-xs hover:text-sky-650 truncate transition-colors pr-2 leading-snug flex-1 flex items-center gap-1.5"
+                          className="font-bold text-zinc-800 text-xs hover:text-sky-650 truncate transition-colors pr-2 leading-snug flex-1 flex items-center flex-wrap gap-1"
                           title={lead.Nome || 'Unnamed Lead'}
                         >
                           <span className="truncate">{lead.Nome || 'Unnamed Lead'}</span>
@@ -931,6 +932,11 @@ export default function LeadsPage() {
                             <span className="shrink-0 inline-flex items-center bg-rose-100 text-rose-700 text-[8px] font-black uppercase tracking-widest px-1 py-0.5 rounded-full border border-rose-200">
                               <Sparkles size={6} className="text-rose-500 mr-0.5" />
                               Promo
+                            </span>
+                          )}
+                          {lead.is_referral && (
+                            <span className="shrink-0 inline-flex items-center gap-0.5 bg-violet-100 text-violet-700 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-violet-200 shadow-3xs animate-fade-in">
+                              Indicação
                             </span>
                           )}
                         </Link>
@@ -1088,8 +1094,12 @@ export default function LeadsPage() {
                 {filteredLeads.map((lead) => (
                   <tr 
                     key={lead.id} 
-                    className={`hover:bg-slate-50 transition-colors group ${
-                      selectedLeadIds.includes(lead.id) ? 'bg-sky-50/40 hover:bg-sky-50/60' : ''
+                    className={`hover:bg-slate-50 transition-colors group border-l-2 ${
+                      selectedLeadIds.includes(lead.id) 
+                        ? 'bg-sky-50/40 hover:bg-sky-50/60 border-l-sky-500' 
+                        : lead.is_referral 
+                          ? 'bg-amber-50/15 hover:bg-amber-50/25 border-l-amber-500' 
+                          : 'border-l-transparent'
                     }`}
                   >
                     {isBatchMode && (
@@ -1124,12 +1134,17 @@ export default function LeadsPage() {
                     </td>
                     <td className="px-3 py-2.5 align-middle w-[250px]">
                       <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-2 max-w-[200px]">
+                        <div className="flex items-center gap-1.5 flex-wrap max-w-[200px]">
                           <Link href={`/leads/${lead.id}`} className="font-bold text-zinc-900 text-[13px] hover:text-sky-600 truncate block" title={lead.Nome || 'Unnamed'}>{lead.Nome || 'Unnamed'}</Link>
                           {lead.is_promo && (
                             <span className="shrink-0 inline-flex items-center gap-0.5 bg-rose-100 text-rose-700 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-rose-200">
                               <Sparkles size={8} className="text-rose-500" />
                               Promo
+                            </span>
+                          )}
+                          {lead.is_referral && (
+                            <span className="shrink-0 inline-flex items-center gap-0.5 bg-violet-100 text-violet-700 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-violet-200 shadow-3xs">
+                              Indicação
                             </span>
                           )}
                         </div>
@@ -1452,6 +1467,19 @@ export default function LeadsPage() {
                         className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:ring-2 focus:ring-sky-500/20 resize-none"
                       />
                     </div>
+                    {/* Referral Checkbox */}
+                    <div className="col-span-2 flex items-center gap-2 bg-zinc-50 p-3 rounded-lg border border-zinc-200">
+                      <input
+                        type="checkbox"
+                        id="isReferralEdit"
+                        checked={!!editForm.is_referral}
+                        onChange={e => setEditForm({...editForm, is_referral: e.target.checked})}
+                        className="w-4 h-4 text-amber-600 rounded border-zinc-300 focus:ring-amber-500 cursor-pointer"
+                      />
+                      <label htmlFor="isReferralEdit" className="text-sm font-semibold text-zinc-700 cursor-pointer select-none">
+                        {language === 'en' ? 'Is this lead a referral?' : 'Este lead é de indicação?'}
+                      </label>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1665,6 +1693,20 @@ export default function LeadsPage() {
                       onChange={e => setNewLeadForm({...newLeadForm, Final: e.target.value})}
                       className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 focus:outline-none transition-all"
                     />
+                  </div>
+
+                  {/* Referral Checkbox */}
+                  <div className="col-span-2 flex items-center gap-2 bg-zinc-50 p-3 rounded-lg border border-zinc-200">
+                    <input
+                      type="checkbox"
+                      id="isReferral"
+                      checked={!!newLeadForm.is_referral}
+                      onChange={e => setNewLeadForm({...newLeadForm, is_referral: e.target.checked})}
+                      className="w-4 h-4 text-emerald-600 rounded border-zinc-300 focus:ring-emerald-500"
+                    />
+                    <label htmlFor="isReferral" className="text-sm font-semibold text-zinc-700 cursor-pointer">
+                      {language === 'en' ? 'Is this lead a referral?' : 'Este lead é de indicação?'}
+                    </label>
                   </div>
 
                   {/* Notes / Obs */}

@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS leads (
   "OBSERVACOES" TEXT,
   "FOLLOWUP" TEXT,
   "UMSG" TEXT,
+  is_referral BOOLEAN DEFAULT false,
   created_by_email TEXT
 );
 
