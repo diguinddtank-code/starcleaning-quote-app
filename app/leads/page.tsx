@@ -238,7 +238,19 @@ const matchTimeFilter = (l: Lead, filter: string, customStart?: string, customEn
 };
 
 export default function LeadsPage() {
-  const { leads, deleteLead, updateLead, addLead } = useLead();
+  const { leads: rawLeads, deleteLead, updateLead, addLead } = useLead();
+
+  const leads = useMemo(() => {
+    const uniqueEmails = new Set();
+    return rawLeads.filter(lead => {
+      if (!lead.Email) return true;
+      const email = lead.Email.toLowerCase().trim();
+      if (uniqueEmails.has(email)) return false;
+      uniqueEmails.add(email);
+      return true;
+    });
+  }, [rawLeads]);
+
   const { savedQuotes } = useQuote();
   const { language, t, translateStage } = useLanguage();
   const [filterQuery, setFilterQuery] = useState('');
@@ -317,6 +329,22 @@ export default function LeadsPage() {
       setIsBatchMode(false);
     } catch (err) {
       console.error('Error batch deleting', err);
+    }
+  };
+
+  const handleSingleDelete = async (id: string, name: string) => {
+    const confirmed = window.confirm(
+      language === 'en'
+        ? `Are you sure you want to delete lead "${name || 'Unnamed'}"? This will also remove it from Supabase.`
+        : `Tem certeza que deseja excluir o lead "${name || 'Unnamed'}"? Isso também irá apagá-lo do Supabase.`
+    );
+    if (!confirmed) return false;
+    try {
+      await deleteLead(id);
+      return true;
+    } catch (err) {
+      console.error('Error deleting lead:', err);
+      return false;
     }
   };
 
@@ -555,18 +583,17 @@ export default function LeadsPage() {
   };
 
   const getStatusColor = (status?: string) => {
-    const s = status?.toLowerCase() || '';
-    if (s.includes('hot leads') || s.includes('hot') || s.includes('solution design')) return 'bg-rose-500 text-white border-rose-600 shadow-sm animate-pulse';
-    if (s.includes('agendado') || s.includes('closing')) return 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200';
-    if (s.includes('deposit') || s.includes('depósito') || s.includes('deposito')) return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
-    if (s.includes('novo') || s.includes('new lead')) return 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200';
-    if (s.includes('sem interesse') || s.includes('not interest') || s.includes('perdido')) return 'bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-200';
-    if (s.includes('too pricey') || s.includes('too_pricey') || s.includes('caro') || s.includes('pricey')) return 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200 hover:bg-fuchsia-200';
-    if (s.includes('contato') || s.includes('contact') || s.includes('initial')) return 'bg-sky-100 text-sky-800 border-sky-200 hover:bg-sky-200';
-    if (s.includes('descoberta') || s.includes('discovery') || s.includes('nego') || s.includes('stand')) return 'bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200';
-    if (s.includes('pricing') || s.includes('presentation') || s.includes('estimate') || s.includes('quote')) return 'bg-pink-100 text-pink-800 border-pink-200 hover:bg-pink-200';
-    if (s.includes('responde') || s.includes('no response')) return 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200';
-    return 'bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100';
+    const s = translateStage(status || '').toLowerCase();
+    if (s.includes('hot leads') || s.includes('hot')) return 'bg-rose-500 text-white border-rose-600 shadow-sm animate-pulse';
+    if (s.includes('closing')) return 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200';
+    if (s.includes('not interested')) return 'bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-200';
+    if (s.includes('too pricey')) return 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200 hover:bg-fuchsia-200';
+    if (s.includes('initial contact')) return 'bg-sky-100 text-sky-800 border-sky-200 hover:bg-sky-200';
+    if (s.includes('discovery')) return 'bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200';
+    if (s.includes('pricing') || s.includes('presentation')) return 'bg-pink-100 text-pink-800 border-pink-200 hover:bg-pink-200';
+    if (s.includes('no response')) return 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200';
+    // Defaults to emerald (New Lead)
+    return 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200';
   };
 
   const leadsByStage = kanbanColumns.reduce((acc, stage) => {
@@ -971,13 +998,22 @@ export default function LeadsPage() {
                             </span>
                           )}
                         </Link>
-                        <button 
-                          onClick={() => handleEditClick(lead)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 text-zinc-450 hover:text-sky-600 hover:bg-sky-50 rounded shrink-0 self-center"
-                          title="Quick Edit"
-                        >
-                          <Edit3 size={11} />
-                        </button>
+                        <div className="flex gap-0.5 items-center shrink-0 self-center">
+                          <button 
+                            onClick={() => handleEditClick(lead)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 text-zinc-450 hover:text-sky-600 hover:bg-sky-50 rounded cursor-pointer"
+                            title="Quick Edit"
+                          >
+                            <Edit3 size={11} />
+                          </button>
+                          <button 
+                            onClick={() => handleSingleDelete(lead.id, lead.Nome || '')}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 text-zinc-450 hover:text-red-600 hover:bg-red-50 rounded cursor-pointer"
+                            title={language === 'en' ? 'Delete Lead' : 'Excluir Lead'}
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
                       </div>
 
                       {(lead.Inicial || savedQuotes.find(q => q.leadId === lead.id)) && (
@@ -1205,14 +1241,21 @@ export default function LeadsPage() {
                       <div className="flex justify-end gap-1.5 items-center opacity-70 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                         <button 
                           onClick={() => handleEditClick(lead)}
-                          className="p-1.5 text-zinc-400 hover:text-sky-600 hover:bg-sky-50 rounded transition-colors"
+                          className="p-1.5 text-zinc-400 hover:text-sky-600 hover:bg-sky-50 rounded transition-colors cursor-pointer"
                           title="Quick Edit"
                         >
                           <Edit3 size={14} />
                         </button>
+                        <button 
+                          onClick={() => handleSingleDelete(lead.id, lead.Nome || '')}
+                          className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                          title={language === 'en' ? 'Delete Lead' : 'Excluir Lead'}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                         <Link 
                           href={`/leads/${lead.id}`}
-                          className="p-1.5 text-zinc-400 hover:text-sky-600 hover:bg-sky-50 rounded transition-colors"
+                          className="p-1.5 text-zinc-400 hover:text-sky-600 hover:bg-sky-50 rounded transition-colors cursor-pointer"
                           title="View Details"
                         >
                           <ChevronRight size={15} strokeWidth={2.5} />
@@ -1517,10 +1560,13 @@ export default function LeadsPage() {
 
               <div className="p-4 border-t border-zinc-200 bg-zinc-50 sm:rounded-b-2xl flex justify-between items-center">
                 <button 
-                  onClick={() => deleteLead(editingLead.id).then(() => setEditingLead(null))}
-                  className="px-3 py-1.5 text-red-600 hover:bg-red-50 text-sm font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
+                  onClick={async () => {
+                    const deleted = await handleSingleDelete(editingLead.id, editingLead.Nome || '');
+                    if (deleted) setEditingLead(null);
+                  }}
+                  className="px-3 py-1.5 text-red-600 hover:bg-red-50 text-sm font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <Trash2 size={16} /> Delete
+                  <Trash2 size={16} /> {language === 'en' ? 'Delete' : 'Excluir'}
                 </button>
                 <div className="flex gap-2">
                   <button 

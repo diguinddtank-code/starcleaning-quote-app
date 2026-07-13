@@ -374,10 +374,14 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center">
                     <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold uppercase ${
-                      lead.ETAPA?.toLowerCase().includes('novo') ? 'bg-emerald-100 text-emerald-700' : 
-                      lead.ETAPA?.toLowerCase().includes('agendado') ? 'bg-sky-100 text-sky-700' :
-                      lead.ETAPA?.toLowerCase().includes('negociando') ? 'bg-amber-100 text-amber-700' :
-                      'bg-zinc-200 text-zinc-700'
+                      lead.ETAPA?.toLowerCase().includes('agendado') || lead.ETAPA?.toLowerCase().includes('closing') ? 'bg-sky-100 text-sky-700' :
+                      lead.ETAPA?.toLowerCase().includes('negociando') || lead.ETAPA?.toLowerCase().includes('presentation') ? 'bg-amber-100 text-amber-700' :
+                      lead.ETAPA?.toLowerCase().includes('hot') ? 'bg-rose-100 text-rose-700' :
+                      lead.ETAPA?.toLowerCase().includes('descoberta') || lead.ETAPA?.toLowerCase().includes('discovery') ? 'bg-indigo-100 text-indigo-750' :
+                      lead.ETAPA?.toLowerCase().includes('caro') || lead.ETAPA?.toLowerCase().includes('pricey') ? 'bg-fuchsia-100 text-fuchsia-700' :
+                      lead.ETAPA?.toLowerCase().includes('sem interesse') || lead.ETAPA?.toLowerCase().includes('not interested') ? 'bg-rose-100 text-rose-700' :
+                      // Defaults to green/emerald since the text defaults to New Lead / Novo
+                      'bg-emerald-100 text-emerald-700'
                     }`}>
                       {translateStage(lead.ETAPA || 'Novo')}
                     </span>

@@ -8,7 +8,8 @@ import { notFound, useRouter } from 'next/navigation';
 import { 
   User, Mail, Phone, MapPin, Calendar, Edit3, MessageCircle, FileText, 
   ArrowLeft, Loader2, Save, X, DollarSign, Printer, ChevronRight, Send, 
-  CheckCircle2, Sparkles, AlertTriangle, Shield, Check, Copy, Flame, Users, Heart 
+  CheckCircle2, Sparkles, AlertTriangle, Shield, Check, Copy, Flame, Users, Heart,
+  Trash2
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -18,7 +19,7 @@ import { QuoteDocument } from '@/components/QuoteDocument';
 import { generateQuoteEmailHtml } from '@/lib/emailTemplate';
 
 export function LeadDetailClient({ id }: { id: string }) {
-  const { leads, updateLead } = useLead();
+  const { leads, updateLead, deleteLead } = useLead();
   const { savedQuotes } = useQuote();
   const { settings } = useSettings();
   const { language, translateStage } = useLanguage();
@@ -279,6 +280,21 @@ export function LeadDetailClient({ id }: { id: string }) {
     await updateLead(lead.id, editForm);
     setIsSaving(false);
     setIsEditing(false);
+  };
+
+  const handleDeleteLeadDetail = async () => {
+    const confirmed = window.confirm(
+      language === 'en'
+        ? `Are you sure you want to delete lead "${lead.Nome || 'Unnamed'}"? This will permanently remove it and redirect you to the leads list.`
+        : `Tem certeza que deseja excluir o lead "${lead.Nome || 'Unnamed'}"? Isso apagará os dados do Supabase e redirecionará para a lista de leads.`
+    );
+    if (!confirmed) return;
+    try {
+      await deleteLead(lead.id);
+      router.push('/leads');
+    } catch (err) {
+      console.error('Error deleting lead:', err);
+    }
   };
 
   const updateStatus = async (newStatus: string) => {
@@ -645,6 +661,13 @@ export function LeadDetailClient({ id }: { id: string }) {
               ) : (
                 <><Edit3 size={13} /> {language === 'en' ? 'Edit Profile' : 'Editar Info'}</>
               )}
+            </button>
+
+            <button 
+              onClick={handleDeleteLeadDetail}
+              className="w-full sm:w-auto flex justify-center items-center gap-2 px-5 py-3 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold uppercase tracking-wider rounded-xl border border-red-200 shadow-2xs transition-all active:scale-95 cursor-pointer"
+            >
+              <Trash2 size={13} /> {language === 'en' ? 'Delete' : 'Excluir'}
             </button>
             
             <Link 

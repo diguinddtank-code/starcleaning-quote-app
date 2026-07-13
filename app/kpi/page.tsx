@@ -116,6 +116,8 @@ export default function KPIPage() {
   });
   
   const scheduledCount = scheduledLeads.length;
+  const scheduledReferrals = scheduledLeads.filter(l => l.is_referral).length;
+  const scheduledNonReferrals = scheduledLeads.filter(l => !l.is_referral).length;
 
   const conversionRate = totalLeads === 0 ? 0 : Math.round((scheduledCount / totalLeads) * 100);
 
@@ -178,16 +180,17 @@ export default function KPIPage() {
     let stage = lead.ETAPA?.trim() || 'Novo';
     
     // Normalize stage names nicely
-    if (lead.is_referral) stage = language === 'en' ? 'Referral' : 'Indicação';
-    else if (stage.toLowerCase().includes('too pricey') || stage.toLowerCase().includes('caro') || stage.toLowerCase().includes('pricey')) stage = 'Too Pricey';
-    else if (stage.toLowerCase().includes('novo') || stage.toLowerCase().includes('new lead')) stage = language === 'en' ? 'New Lead' : 'Novo Lead';
-    else if (stage.toLowerCase().includes('agendado') || stage.toLowerCase().includes('closing') || stage.toLowerCase().includes('fechado')) stage = language === 'en' ? 'Closed / Scheduled' : 'Agendado / Fechado';
-    else if (stage.toLowerCase().includes('negociando') || stage.toLowerCase().includes('pricing') || stage.toLowerCase().includes('presentation') || stage.toLowerCase().includes('quote')) stage = language === 'en' ? 'Negotiation' : 'Em Negociação';
-    else if (stage.toLowerCase().includes('primeiro contato') || stage.toLowerCase().includes('initial contact') || stage.toLowerCase().includes('qualification')) stage = language === 'en' ? 'Initial Contact' : 'Primeiro Contato';
-    else if (stage.toLowerCase().includes('discovery')) stage = language === 'en' ? 'Discovery' : 'Alinhamento';
-    else if (stage.toLowerCase().includes('solution') || stage.toLowerCase().includes('hot')) stage = language === 'en' ? 'Hot Leads' : 'Hot Leads';
-    else if (stage.toLowerCase().includes('não responde') || stage.toLowerCase().includes('no response')) stage = language === 'en' ? 'No Response' : 'Sem Resposta';
-    else if (stage.toLowerCase().includes('not interested') || stage.toLowerCase().includes('não tem interesse') || stage.toLowerCase().includes('sem interesse') || stage.toLowerCase().includes('desinteressado')) stage = language === 'en' ? 'Not Interested' : 'Sem Interesse';
+    const stageLower = stage.toLowerCase();
+    if (stageLower.includes('too pricey') || stageLower.includes('caro') || stageLower.includes('pricey')) stage = 'Too Pricey';
+    else if (lead.is_referral) stage = language === 'en' ? 'Referral' : 'Indicação';
+    else if (stageLower.includes('novo') || stageLower.includes('new lead')) stage = language === 'en' ? 'New Lead' : 'Novo Lead';
+    else if (stageLower.includes('agendado') || stageLower.includes('closing') || stageLower.includes('fechado')) stage = language === 'en' ? 'Closed / Scheduled' : 'Agendado / Fechado';
+    else if (stageLower.includes('negociando') || stageLower.includes('pricing') || stageLower.includes('presentation') || stageLower.includes('quote')) stage = language === 'en' ? 'Negotiation' : 'Em Negociação';
+    else if (stageLower.includes('primeiro contato') || stageLower.includes('initial contact') || stageLower.includes('qualification')) stage = language === 'en' ? 'Initial Contact' : 'Primeiro Contato';
+    else if (stageLower.includes('discovery')) stage = language === 'en' ? 'Discovery' : 'Alinhamento';
+    else if (stageLower.includes('solution') || stageLower.includes('hot')) stage = language === 'en' ? 'Hot Leads' : 'Hot Leads';
+    else if (stageLower.includes('não responde') || stageLower.includes('no response')) stage = language === 'en' ? 'No Response' : 'Sem Resposta';
+    else if (stageLower.includes('not interested') || stageLower.includes('não tem interesse') || stageLower.includes('sem interesse') || stageLower.includes('desinteressado')) stage = language === 'en' ? 'Not Interested' : 'Sem Interesse';
     else stage = language === 'en' ? 'Others' : 'Outros';
 
     acc[stage] = (acc[stage] || 0) + 1;
@@ -434,6 +437,22 @@ export default function KPIPage() {
                 <div>
                   <h3 className="text-2xl font-black text-zinc-900">{scheduledCount}</h3>
                   <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mt-1">{language === 'en' ? 'Bookings Completed' : 'Agendamentos concluídos'}</p>
+                  <div className="mt-3 pt-2.5 border-t border-zinc-100 flex flex-col gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-500">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0"></span>
+                        <span>{language === 'en' ? 'Referrals' : 'Indicações'}</span>
+                      </div>
+                      <span className="text-zinc-800 font-black">{scheduledReferrals}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0"></span>
+                        <span>{language === 'en' ? 'Direct' : 'Sem Indicação'}</span>
+                      </div>
+                      <span className="text-zinc-800 font-black">{scheduledNonReferrals}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 

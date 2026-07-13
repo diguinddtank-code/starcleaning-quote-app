@@ -192,19 +192,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   };
 
   const translateStage = (stage: string) => {
-    const s = stage.toLowerCase();
+    const s = stage.toLowerCase().replace(/\s+/g, ' ').trim();
     
-    if (s.includes('initial contact') || s.includes('qualification') || s.includes('initial') || s.includes('contato') || s.includes('contact')) return t('stage.initial_contact');
-    if (s.includes('discovery')) return t('stage.discovery');
+    if (s.includes('initial contact') || s.includes('qualification') || s.includes('initial') || s.includes('contato') || s.includes('contact') || s.includes('primeiro') || s.includes('stand')) return t('stage.initial_contact');
+    if (s.includes('discovery') || s.includes('descoberta') || s.includes('alinhamento')) return t('stage.discovery');
     if (s.includes('solution') || s.includes('design') || s.includes('hot leads') || s.includes('hot')) return t('stage.solution_design');
-    if (s.includes('pricing') || s.includes('presentation') || s.includes('estimate') || s.includes('quote') || s.includes('cotado')) return t('stage.pricing_presentation');
-    if (s.includes('não responde') || s.includes('nao responde') || s.includes('no response') || s.includes('no_response')) return t('stage.no_response');
-    if (s.includes('not interested') || s.includes('not_interested') || s.includes('não tem interesse') || s.includes('nao tem interesse') || s.includes('desinteressado')) return t('stage.not_interested');
+    if (s.includes('pricing') || s.includes('presentation') || s.includes('estimate') || s.includes('estimativa') || s.includes('quote') || s.includes('cotado') || s.includes('negocia') || s.includes('under negotiation')) return t('stage.pricing_presentation');
+    if (s.includes('não responde') || s.includes('nao responde') || s.includes('no response') || s.includes('no_response') || s.includes('responde')) return t('stage.no_response');
+    if (s.includes('not interested') || s.includes('not_interested') || s.includes('não tem interesse') || s.includes('nao tem interesse') || s.includes('desinteressado') || s.includes('interest') || s.includes('dupe') || s.includes('fake') || s.includes('miss')) return t('stage.not_interested');
     if (s.includes('too pricey') || s.includes('too_pricey') || s.includes('caro') || s.includes('pricey')) return t('stage.too_pricey');
-    if (s.includes('closing') || s.includes('closed') || s.includes('agendado') || s.includes('scheduled') || s.includes('deposit') || s.includes('depósito') || s.includes('deposito')) return t('stage.closing');
-    
-    // Legacy mapping fallback
-    if (s.includes('negociando') || s.includes('negotiating')) return t('stage.discovery');
+    if (s.includes('closing') || s.includes('closed') || s.includes('agendado') || s.includes('scheduled') || s.includes('deposit') || s.includes('depósito') || s.includes('deposito') || s.includes('confirm')) return t('stage.closing');
     
     return t('stage.novo');
   };
