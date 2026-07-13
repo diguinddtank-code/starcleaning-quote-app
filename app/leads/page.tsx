@@ -117,6 +117,21 @@ const getStageConfig = (stageName: string) => {
     };
   }
 
+  if (name.includes('too pricey') || name.includes('too_pricey') || name.includes('caro') || name.includes('pricey')) {
+    return {
+      borderColor: 'border-fuchsia-200/80 hover:border-fuchsia-300',
+      bgColor: 'bg-fuchsia-50/10',
+      headerBg: 'bg-fuchsia-50/70 border-fuchsia-100/80',
+      badgeBg: 'bg-fuchsia-100 text-fuchsia-800 font-bold',
+      headingColor: 'text-fuchsia-900',
+      indicatorDot: 'bg-fuchsia-500',
+      accentBorder: 'border-l-4 border-l-fuchsia-500',
+      shadowColor: 'hover:shadow-fuchsia-100/40',
+      iconAccent: '💸',
+      dragOverClasses: 'border-fuchsia-500 bg-fuchsia-50/40 shadow-lg scale-[1.01] ring-2 ring-fuchsia-500/15'
+    };
+  }
+
   if (name.includes('closing') || name.includes('win') || name.includes('won') || name.includes('fechar') || name.includes('agendado') || name.includes('scheduled')) {
     return {
       borderColor: 'border-violet-200/80 hover:border-violet-300',
@@ -465,6 +480,7 @@ export default function LeadsPage() {
     t('stage.pricing_presentation'), 
     t('stage.no_response'),
     t('stage.not_interested'),
+    t('stage.too_pricey'),
     t('stage.closing')
   ];
 
@@ -495,6 +511,7 @@ export default function LeadsPage() {
   const filteredLeads = useMemo(() => {
     return timeFilteredLeads
       .filter(l => {
+        if (statusFilter === 'REFERRAL') return !!l.is_referral;
         if (statusFilter !== 'ALL' && getKanbanStage(l.ETAPA) !== statusFilter) return false;
         return true;
       })
@@ -544,6 +561,7 @@ export default function LeadsPage() {
     if (s.includes('deposit') || s.includes('depósito') || s.includes('deposito')) return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
     if (s.includes('novo') || s.includes('new lead')) return 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200';
     if (s.includes('sem interesse') || s.includes('not interest') || s.includes('perdido')) return 'bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-200';
+    if (s.includes('too pricey') || s.includes('too_pricey') || s.includes('caro') || s.includes('pricey')) return 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200 hover:bg-fuchsia-200';
     if (s.includes('contato') || s.includes('contact') || s.includes('initial')) return 'bg-sky-100 text-sky-800 border-sky-200 hover:bg-sky-200';
     if (s.includes('descoberta') || s.includes('discovery') || s.includes('nego') || s.includes('stand')) return 'bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200';
     if (s.includes('pricing') || s.includes('presentation') || s.includes('estimate') || s.includes('quote')) return 'bg-pink-100 text-pink-800 border-pink-200 hover:bg-pink-200';
@@ -642,7 +660,9 @@ export default function LeadsPage() {
 
   const totalLeads = createdKPILeads.length;
   const newLeadsCount = createdKPILeads.filter(l => getKanbanStage(l.ETAPA) === t('stage.novo')).length;
-  const activeCount = createdKPILeads.filter(l => getKanbanStage(l.ETAPA) !== t('stage.novo') && getKanbanStage(l.ETAPA) !== t('stage.closing') && getKanbanStage(l.ETAPA) !== t('stage.no_response') && getKanbanStage(l.ETAPA) !== t('stage.not_interested')).length;
+  const activeCount = createdKPILeads.filter(l => getKanbanStage(l.ETAPA) !== t('stage.novo') && getKanbanStage(l.ETAPA) !== t('stage.closing') && getKanbanStage(l.ETAPA) !== t('stage.no_response') && getKanbanStage(l.ETAPA) !== t('stage.not_interested') && getKanbanStage(l.ETAPA) !== t('stage.too_pricey')).length;
+  const referralCount = createdKPILeads.filter(l => l.is_referral).length;
+  const tooPriceyCount = createdKPILeads.filter(l => getKanbanStage(l.ETAPA) === t('stage.too_pricey')).length;
 
   const convertedCount = useMemo(() => {
     return leads.filter(l => {
@@ -732,7 +752,7 @@ export default function LeadsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 w-full md:w-auto">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3 md:gap-4 w-full md:w-auto">
               <div className="bg-white p-3 md:p-4 rounded-xl border border-zinc-200 shadow-sm flex flex-col items-center justify-center min-w-[90px]">
                 <span className="text-zinc-500 text-[11px] md:text-sm font-semibold uppercase tracking-wider mb-1">Total KPI</span>
                 <span className="text-xl md:text-2xl font-bold text-zinc-900">{totalLeads}</span>
@@ -750,6 +770,14 @@ export default function LeadsPage() {
                 <span className="text-zinc-500 text-[11px] md:text-sm font-semibold uppercase tracking-wider mb-1">{language === 'en' ? 'Converted' : 'Convertidos'}</span>
                 <span className="text-xl md:text-2xl font-bold text-indigo-600">{convertedCount}</span>
               </div>
+              <div className="bg-white p-3 md:p-4 rounded-xl border border-zinc-200 shadow-sm flex flex-col items-center justify-center min-w-[90px]">
+                <span className="text-zinc-500 text-[11px] md:text-sm font-semibold uppercase tracking-wider mb-1">{language === 'en' ? 'Referrals' : 'Indicações'}</span>
+                <span className="text-xl md:text-2xl font-bold text-violet-600">{referralCount}</span>
+              </div>
+              <div className="bg-white p-3 md:p-4 rounded-xl border border-zinc-200 shadow-sm flex flex-col items-center justify-center min-w-[90px]">
+                <span className="text-zinc-500 text-[11px] md:text-sm font-semibold uppercase tracking-wider mb-1">Pricey</span>
+                <span className="text-xl md:text-2xl font-bold text-rose-600">{tooPriceyCount}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -759,9 +787,12 @@ export default function LeadsPage() {
             <div className="flex flex-wrap items-center gap-1.5">
               {[
                 { id: 'ALL', label: language === 'en' ? 'All' : 'Todos' },
+                { id: 'REFERRAL', label: language === 'en' ? 'Referrals' : 'Indicações' },
                 ...kanbanColumns.map(stage => ({ id: stage, label: stage }))
               ].map(stage => {
-                const count = stage.id === 'ALL' ? timeFilteredLeads.length : timeFilteredLeads.filter(l => getKanbanStage(l.ETAPA) === stage.id).length;
+                const count = stage.id === 'ALL' ? timeFilteredLeads.length : 
+                              stage.id === 'REFERRAL' ? timeFilteredLeads.filter(l => l.is_referral).length : 
+                              timeFilteredLeads.filter(l => getKanbanStage(l.ETAPA) === stage.id).length;
                 return (
                 <button
                   key={stage.id}
@@ -1412,7 +1443,7 @@ export default function LeadsPage() {
                     <div className="col-span-2 space-y-2">
                       <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">Mudar Etapa do Lead</label>
                       <div className="flex flex-wrap gap-1.5 p-1.5 bg-zinc-50 border border-zinc-200 rounded-xl">
-                        {['New Lead', 'Initial Contact & Qualification', 'Discovery', 'HOT LEADS', 'Pricing & Estimate Presentation', 'No Response', 'Not Interested', 'Closing'].map((stageName) => {
+                        {['New Lead', 'Initial Contact & Qualification', 'Discovery', 'HOT LEADS', 'Pricing & Estimate Presentation', 'No Response', 'Not Interested', 'Too Pricey', 'Closing'].map((stageName) => {
                           const isCurrent = (editForm.ETAPA || '').toLowerCase() === stageName.toLowerCase();
                           return (
                             <button
@@ -1545,7 +1576,7 @@ export default function LeadsPage() {
                   <div className="col-span-2 space-y-2">
                     <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">Etapa Inicial do Lead</label>
                     <div className="flex flex-wrap gap-1.5 p-1.5 bg-zinc-50 border border-zinc-200 rounded-xl">
-                      {['New Lead', 'Initial Contact & Qualification', 'Discovery', 'HOT LEADS', 'Pricing & Estimate Presentation', 'No Response', 'Not Interested', 'Closing'].map((stageName) => {
+                      {['New Lead', 'Initial Contact & Qualification', 'Discovery', 'HOT LEADS', 'Pricing & Estimate Presentation', 'No Response', 'Not Interested', 'Too Pricey', 'Closing'].map((stageName) => {
                         const isCurrent = (newLeadForm.ETAPA || 'New Lead').toLowerCase() === stageName.toLowerCase();
                         return (
                           <button

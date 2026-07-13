@@ -10,7 +10,7 @@ import {
   Users, PlusCircle, History, ArrowRight, 
   BarChart2, Calculator, BookOpen, 
   CheckCircle, FileText, Activity, 
-  DollarSign, TrendingUp, Inbox, Calendar, Bell
+  DollarSign, TrendingUp, Inbox, Calendar, Bell, Award
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -33,6 +33,8 @@ export default function DashboardPage() {
   const totalLeads = leads.length;
   const newLeadsCount = leads.filter(l => translateStage(l.ETAPA || '').toLowerCase() === translateStage('New Lead').toLowerCase()).length;
   const closingCount = leads.filter(l => translateStage(l.ETAPA || '').toLowerCase() === translateStage('Closing').toLowerCase()).length;
+  const referralCount = leads.filter(l => l.is_referral).length;
+  const tooPriceyCount = leads.filter(l => translateStage(l.ETAPA || '').toLowerCase() === translateStage('Too Pricey').toLowerCase()).length;
   
   const recentLeads = [...leads]
     .sort((a, b) => {
@@ -119,7 +121,7 @@ export default function DashboardPage() {
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+        className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4"
       >
         <motion.div 
           variants={itemVariants} 
@@ -183,6 +185,26 @@ export default function DashboardPage() {
             <h3 className="text-3xl font-black text-zinc-950 tracking-tight">{closingCount}</h3>
             <span className="text-xs font-extrabold text-zinc-800 bg-zinc-100 px-2.5 py-1 rounded-full border border-zinc-300 uppercase tracking-wide">
               {t('db.converted')}
+            </span>
+          </div>
+        </motion.div>
+
+        <motion.div 
+          variants={itemVariants} 
+          whileHover={{ y: -4, scale: 1.01 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className="bg-white p-5 rounded-2xl border border-zinc-350 shadow-sm transition-shadow hover:shadow-md"
+        >
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-md shadow-violet-500/20">
+              <Award size={18} />
+            </div>
+            <span className="text-xs font-black text-zinc-800 uppercase tracking-wider">Indicações</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-3xl font-black text-zinc-950 tracking-tight">{referralCount}</h3>
+            <span className="text-xs font-extrabold text-violet-800 bg-violet-100 px-2.5 py-1 rounded-full border border-violet-200 uppercase tracking-wide">
+              Referrals
             </span>
           </div>
         </motion.div>

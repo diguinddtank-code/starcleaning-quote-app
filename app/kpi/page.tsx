@@ -7,7 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Download, ArrowUpRight, Target, Users, CalendarCheck, TrendingUp, Calendar, Filter, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-const COLORS = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#64748b', '#ec4899'];
+const COLORS = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#64748b', '#ec4899', '#f43f5e', '#d946ef', '#14b8a6', '#f97316', '#6366f1', '#eab308'];
 
 type FilterPeriod = 'all' | 'this-week' | 'last-30' | 'this-month' | 'last-month' | 'custom';
 
@@ -124,6 +124,12 @@ export default function KPIPage() {
   const referralCount = referralLeads.length;
   const internetCount = internetLeads.length;
 
+  const tooPriceyLeads = createdLeads.filter(l => {
+    const s = l.ETAPA?.toLowerCase() || '';
+    return s.includes('too pricey') || s.includes('too_pricey') || s.includes('caro') || s.includes('pricey');
+  });
+  const tooPriceyCount = tooPriceyLeads.length;
+
   const referralScheduled = referralLeads.filter(l => {
     const s = l.ETAPA?.toLowerCase() || '';
     return s.includes('agendado') || s.includes('scheduling') || s.includes('closing') || s.includes('fechado') || s.includes('agendou');
@@ -141,23 +147,52 @@ export default function KPIPage() {
   // so it correctly reflects the activity in the current period.
   const allRelevantLeads = Array.from(new Set([...createdLeads, ...scheduledLeads]));
   
+  const initialStages = language === 'en' ? {
+    'New Lead': 0,
+    'Initial Contact': 0,
+    'Discovery': 0,
+    'Hot Leads': 0,
+    'Negotiation': 0,
+    'Closed / Scheduled': 0,
+    'No Response': 0,
+    'Not Interested': 0,
+    'Too Pricey': 0,
+    'Referral': 0,
+    'Others': 0
+  } : {
+    'Novo Lead': 0,
+    'Primeiro Contato': 0,
+    'Alinhamento': 0,
+    'Hot Leads': 0,
+    'Em Negociação': 0,
+    'Agendado / Fechado': 0,
+    'Sem Resposta': 0,
+    'Sem Interesse': 0,
+    'Too Pricey': 0,
+    'Indicação': 0,
+    'Outros': 0
+  };
+
   const stageDataMap = allRelevantLeads.reduce((acc, lead) => {
 
     let stage = lead.ETAPA?.trim() || 'Novo';
     
     // Normalize stage names nicely
-    if (stage.toLowerCase().includes('novo') || stage.toLowerCase().includes('new lead')) stage = language === 'en' ? 'New Lead' : 'Novo Lead';
+    if (lead.is_referral) stage = language === 'en' ? 'Referral' : 'Indicação';
+    else if (stage.toLowerCase().includes('too pricey') || stage.toLowerCase().includes('caro') || stage.toLowerCase().includes('pricey')) stage = 'Too Pricey';
+    else if (stage.toLowerCase().includes('novo') || stage.toLowerCase().includes('new lead')) stage = language === 'en' ? 'New Lead' : 'Novo Lead';
     else if (stage.toLowerCase().includes('agendado') || stage.toLowerCase().includes('closing') || stage.toLowerCase().includes('fechado')) stage = language === 'en' ? 'Closed / Scheduled' : 'Agendado / Fechado';
     else if (stage.toLowerCase().includes('negociando') || stage.toLowerCase().includes('pricing') || stage.toLowerCase().includes('presentation') || stage.toLowerCase().includes('quote')) stage = language === 'en' ? 'Negotiation' : 'Em Negociação';
     else if (stage.toLowerCase().includes('primeiro contato') || stage.toLowerCase().includes('initial contact') || stage.toLowerCase().includes('qualification')) stage = language === 'en' ? 'Initial Contact' : 'Primeiro Contato';
     else if (stage.toLowerCase().includes('discovery')) stage = language === 'en' ? 'Discovery' : 'Alinhamento';
     else if (stage.toLowerCase().includes('solution') || stage.toLowerCase().includes('hot')) stage = language === 'en' ? 'Hot Leads' : 'Hot Leads';
     else if (stage.toLowerCase().includes('não responde') || stage.toLowerCase().includes('no response')) stage = language === 'en' ? 'No Response' : 'Sem Resposta';
+    else if (stage.toLowerCase().includes('not interested') || stage.toLowerCase().includes('não tem interesse') || stage.toLowerCase().includes('sem interesse') || stage.toLowerCase().includes('desinteressado')) stage = language === 'en' ? 'Not Interested' : 'Sem Interesse';
     else stage = language === 'en' ? 'Others' : 'Outros';
 
     acc[stage] = (acc[stage] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
+  }, initialStages as Record<string, number>);
 
   const stageData = Object.entries(stageDataMap)
     .map(([name, value]) => ({ name, value }))
@@ -355,7 +390,7 @@ export default function KPIPage() {
         ) : (
           <>
             {/* KPI Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {/* Total Leads */}
               <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-xs flex flex-col justify-between">
                 <div className="flex justify-between items-start mb-2">
@@ -415,6 +450,38 @@ export default function KPIPage() {
                 <div>
                   <h3 className="text-2xl font-black text-zinc-900">{conversionRate}%</h3>
                   <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mt-1">{language === 'en' ? 'Success Probability' : 'De Lead para Fechamento'}</p>
+                </div>
+              </div>
+
+              {/* Referrals */}
+              <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-xs flex flex-col justify-between">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest">
+                    {language === 'en' ? 'Referrals' : 'Indicações'}
+                  </span>
+                  <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center">
+                    <Users size={15} />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-zinc-900">{referralCount}</h3>
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mt-1">{language === 'en' ? 'Total Referrals' : 'Total de Indicações'}</p>
+                </div>
+              </div>
+
+              {/* Pricey */}
+              <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-xs flex flex-col justify-between">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest">
+                    Pricey
+                  </span>
+                  <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                    <AlertCircle size={15} />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-zinc-900">{tooPriceyCount}</h3>
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mt-1">Too Pricey</p>
                 </div>
               </div>
             </div>

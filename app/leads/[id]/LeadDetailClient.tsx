@@ -545,6 +545,7 @@ export function LeadDetailClient({ id }: { id: string }) {
     'Pricing & Estimate Presentation', 
     'No Response',
     'Not Interested',
+    'Too Pricey',
     'Closing'
   ];
 

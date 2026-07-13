@@ -66,6 +66,7 @@ const translations: Record<Language, Record<string, string>> = {
     'stage.no_response': 'No Response',
     'stage.not_interested': 'Not Interested',
     'stage.closing': 'Closing',
+    'stage.too_pricey': 'Too Pricey',
     
     // Lead Detail
     'ld.quick_msg': 'Quick Messages',
@@ -141,6 +142,7 @@ const translations: Record<Language, Record<string, string>> = {
     'stage.no_response': 'No Response',
     'stage.not_interested': 'Not Interested',
     'stage.closing': 'Closing',
+    'stage.too_pricey': 'Too Pricey',
     
     // Lead Detail
     'ld.quick_msg': 'Mensagens Rápidas',
@@ -198,6 +200,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (s.includes('pricing') || s.includes('presentation') || s.includes('estimate') || s.includes('quote') || s.includes('cotado')) return t('stage.pricing_presentation');
     if (s.includes('não responde') || s.includes('nao responde') || s.includes('no response') || s.includes('no_response')) return t('stage.no_response');
     if (s.includes('not interested') || s.includes('not_interested') || s.includes('não tem interesse') || s.includes('nao tem interesse') || s.includes('desinteressado')) return t('stage.not_interested');
+    if (s.includes('too pricey') || s.includes('too_pricey') || s.includes('caro') || s.includes('pricey')) return t('stage.too_pricey');
     if (s.includes('closing') || s.includes('closed') || s.includes('agendado') || s.includes('scheduled') || s.includes('deposit') || s.includes('depósito') || s.includes('deposito')) return t('stage.closing');
     
     // Legacy mapping fallback
