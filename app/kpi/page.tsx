@@ -147,7 +147,7 @@ export default function KPIPage() {
   // so it correctly reflects the activity in the current period.
   const allRelevantLeads = Array.from(new Set([...createdLeads, ...scheduledLeads]));
   
-  const initialStages = language === 'en' ? {
+  const initialStages: Record<string, number> = language === 'en' ? {
     'New Lead': 0,
     'Initial Contact': 0,
     'Discovery': 0,
@@ -192,7 +192,7 @@ export default function KPIPage() {
 
     acc[stage] = (acc[stage] || 0) + 1;
     return acc;
-  }, initialStages as Record<string, number>);
+  }, initialStages);
 
   const stageData = Object.entries(stageDataMap)
     .map(([name, value]) => ({ name, value }))
