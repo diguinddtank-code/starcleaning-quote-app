@@ -125,8 +125,8 @@ export default function KPIPage() {
   // so it correctly reflects the activity in the current period.
   const allRelevantLeads = Array.from(new Set([...createdLeads, ...scheduledLeads]));
 
-  const referralLeads = allRelevantLeads.filter(l => l.is_referral);
-  const internetLeads = allRelevantLeads.filter(l => !l.is_referral);
+  const referralLeads = createdLeads.filter(l => l.is_referral);
+  const internetLeads = createdLeads.filter(l => !l.is_referral);
   const referralCount = referralLeads.length;
   const internetCount = internetLeads.length;
 
@@ -136,15 +136,8 @@ export default function KPIPage() {
   });
   const tooPriceyCount = tooPriceyLeads.length;
 
-  const referralScheduled = referralLeads.filter(l => {
-    const s = l.ETAPA?.toLowerCase() || '';
-    return s.includes('agendado') || s.includes('scheduling') || s.includes('closing') || s.includes('fechado') || s.includes('agendou');
-  }).length;
-
-  const internetScheduled = internetLeads.filter(l => {
-    const s = l.ETAPA?.toLowerCase() || '';
-    return s.includes('agendado') || s.includes('scheduling') || s.includes('closing') || s.includes('fechado') || s.includes('agendou');
-  }).length;
+  const referralScheduled = scheduledReferrals;
+  const internetScheduled = scheduledNonReferrals;
 
   const referralConversion = referralCount === 0 ? 0 : Math.round((referralScheduled / referralCount) * 100);
   const internetConversion = internetCount === 0 ? 0 : Math.round((internetScheduled / internetCount) * 100);
@@ -181,8 +174,10 @@ export default function KPIPage() {
     
     // Normalize stage names nicely
     const stageLower = stage.toLowerCase();
+    const isCreatedInPeriod = isDateWithin(getLeadDate(lead), filterType, startDate, endDate);
+    
     if (stageLower.includes('too pricey') || stageLower.includes('caro') || stageLower.includes('pricey')) stage = 'Too Pricey';
-    else if (lead.is_referral) stage = language === 'en' ? 'Referral' : 'Indicação';
+    else if (lead.is_referral && isCreatedInPeriod) stage = language === 'en' ? 'Referral' : 'Indicação';
     else if (stageLower.includes('novo') || stageLower.includes('new lead')) stage = language === 'en' ? 'New Lead' : 'Novo Lead';
     else if (stageLower.includes('agendado') || stageLower.includes('closing') || stageLower.includes('fechado')) stage = language === 'en' ? 'Closed / Scheduled' : 'Agendado / Fechado';
     else if (stageLower.includes('negociando') || stageLower.includes('pricing') || stageLower.includes('presentation') || stageLower.includes('quote')) stage = language === 'en' ? 'Negotiation' : 'Em Negociação';
