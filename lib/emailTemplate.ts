@@ -433,6 +433,14 @@ export function generateQuoteEmailHtml(quote: SavedQuote, settings: PricingSetti
                 <li style="margin-bottom: 4px;">Excessive trash, hazardous conditions, or unsafe environments may result in cancellation or additional charges</li>
               </ul>
 
+              <strong style="display: block; font-size: 12px; color: #374151; margin-bottom: 8px;">🛡️ Safety & Access Policies</strong>
+              <p style="margin: 0 0 12px 0; font-size: 11px; color: #6b7280; line-height: 1.5;">To protect our cleaning technicians and ensure a high-quality service, we kindly ask you to observe the following safety rules:</p>
+              <ul style="margin: 0 0 20px 0; padding: 0 0 0 16px; font-size: 11px; color: #71717a; line-height: 1.6;">
+                <li style="margin-bottom: 4px;"><strong>Ladder Safety:</strong> Our technicians are only authorized to climb step stools or ladders up to 3 steps.</li>
+                <li style="margin-bottom: 4px;"><strong>Waiting Window:</strong> Upon arrival, our team will wait at the client's door for up to 30 minutes. If access is not granted within this timeframe, the service may be cancelled or subject to rescheduling/lockout fees.</li>
+                <li style="margin-bottom: 4px;"><strong>Hazardous Conditions:</strong> If there is any sign of physical hazard (such as loose electrical wiring, exposed cables, structural risks, or unsafe elements), our technicians will not clean the affected area for their safety.</li>
+              </ul>
+
               <strong style="display: block; font-size: 12px; color: #374151; margin-bottom: 8px;">💯 Satisfaction Guarantee</strong>
               <p style="margin: 0 0 20px 0; font-size: 11px; color: #6b7280; line-height: 1.5;">If you are not satisfied with your cleaning, please notify us within 24–48 hours after the service. We will gladly return to address any issues or perform necessary touch-ups.</p>
               

@@ -475,6 +475,9 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
           <li>Payment is due in full upon completion of the cleaning service unless otherwise agreed.</li>
           <li>Please ensure our team has clear access to all areas requiring cleaning.</li>
           <li>Cancellations must be made at least 24 hours in advance to avoid a cancellation fee.</li>
+          <li>For safety reasons, our cleaning technicians are only authorized to climb step stools or ladders up to 3 steps.</li>
+          <li>Upon arrival, our cleaning team will wait at the door for a maximum of 30 minutes. If access is not provided within this timeframe, the service may be cancelled or subject to rescheduling/lockout fees.</li>
+          <li>For the physical safety of our staff, if there is any sign of danger (such as loose electrical wiring, exposed hazards, or structural risks), our technicians will not clean the affected area or may refuse service.</li>
         </ul>
       </div>
     </div>
