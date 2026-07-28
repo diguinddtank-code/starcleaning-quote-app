@@ -259,15 +259,29 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
 
   const saveQuoteToLead = async (leadId?: string, customerName?: string, customerPhone?: string, customerEmail?: string): Promise<SavedQuote> => {
     const qid = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    let finalCustomerName = customerName || '';
+    let finalCustomerPhone = customerPhone || '';
+    let finalCustomerEmail = customerEmail || '';
+
+    if (leadId && leads) {
+      const existingLead = leads.find(l => l.id === leadId);
+      if (existingLead) {
+        if (!finalCustomerName) finalCustomerName = existingLead.Nome || '';
+        if (!finalCustomerPhone) finalCustomerPhone = existingLead.Telefone || '';
+        if (!finalCustomerEmail) finalCustomerEmail = existingLead.Email || '';
+      }
+    }
+
     const newQuote: SavedQuote = {
       ...quote,
       id: qid,
       date: new Date().toISOString(),
       total: totalPrice,
       leadId,
-      customerName,
-      customerPhone,
-      customerEmail,
+      customerName: finalCustomerName,
+      customerPhone: finalCustomerPhone,
+      customerEmail: finalCustomerEmail,
       status: 'new',
     };
 
@@ -286,9 +300,9 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
       } else {
         // Create a new Lead
         const newLead = await addLead({
-          Nome: customerName,
-          Telefone: customerPhone,
-          Email: customerEmail,
+          Nome: finalCustomerName,
+          Telefone: finalCustomerPhone,
+          Email: finalCustomerEmail,
           Quartos: quote.beds.toString(),
           Banheiros: (quote.baths + quote.halfBaths).toString(),
           Service: quote.serviceType,
@@ -315,9 +329,9 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
       // Insert Quote
       const fullQuoteData: any = {
         lead_id: finalLeadId,
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        customer_email: customerEmail,
+        customer_name: finalCustomerName,
+        customer_phone: finalCustomerPhone,
+        customer_email: finalCustomerEmail,
         sq_ft: quote.sqFt,
         beds: quote.beds,
         baths: quote.baths,
@@ -340,9 +354,9 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
         console.warn('First insert attempt failed. Retrying with essential schema columns.', insertError);
         const essentialQuoteData: any = {
           lead_id: finalLeadId,
-          customer_name: customerName,
-          customer_phone: customerPhone,
-          customer_email: customerEmail,
+          customer_name: finalCustomerName,
+          customer_phone: finalCustomerPhone,
+          customer_email: finalCustomerEmail,
           sq_ft: quote.sqFt,
           beds: quote.beds,
           baths: quote.baths,

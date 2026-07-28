@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { SavedQuote, PricingSettings, ServiceType } from '@/lib/types';
 import { CheckCircle2, Loader2, Send, X, Eye, EyeOff } from 'lucide-react';
 import { generateQuoteEmailHtml } from '@/lib/emailTemplate';
+import { useLead } from '@/context/LeadContext';
 
 interface QuoteDocumentProps {
   quote: SavedQuote;
@@ -34,6 +35,15 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
     }
   }, []);
 
+  const { leads } = useLead();
+  const lead = leads.find(l => l.id === quote.leadId);
+
+  // Fallback to lead details if quote has them empty or missing
+  const finalCustomerName = quote.customerName || lead?.Nome || '';
+  const finalCustomerPhone = quote.customerPhone || lead?.Telefone || '';
+  const finalCustomerEmail = quote.customerEmail || lead?.Email || '';
+  const finalCustomerAddress = quote.customerAddress || '';
+
   const handleSendEstimate = async () => {
     setIsSending(true);
     setSentStatus('idle');
@@ -43,7 +53,16 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
         ? `${window.location.origin}/estimate/view?id=${quote.id}` 
         : '';
       
-      const htmlContent = generateQuoteEmailHtml(quote, settings, estimateUrl);
+      // Ensure we use the most up-to-date contact details from the lead if they are missing on the quote
+      const quoteWithLatestContact = {
+        ...quote,
+        customerName: finalCustomerName,
+        customerPhone: finalCustomerPhone,
+        customerEmail: finalCustomerEmail,
+        customerAddress: finalCustomerAddress
+      };
+
+      const htmlContent = generateQuoteEmailHtml(quoteWithLatestContact, settings, estimateUrl);
         
       const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
@@ -53,10 +72,10 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
         body: JSON.stringify({
           event: 'estimate_sent',
           leadId: quote.leadId || null,
-          customerName: quote.customerName || '',
-          customerEmail: quote.customerEmail || '',
-          customerPhone: quote.customerPhone || '',
-          customerAddress: quote.customerAddress || '',
+          customerName: finalCustomerName,
+          customerEmail: finalCustomerEmail,
+          customerPhone: finalCustomerPhone,
+          customerAddress: finalCustomerAddress,
           total: quote.total,
           frequency: quote.frequency,
           serviceType: quote.serviceType,
@@ -95,8 +114,8 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
         body: JSON.stringify({
           event: 'estimate_approved',
           quoteId: quote.id,
-          customerName: quote.customerName,
-          customerEmail: quote.customerEmail,
+          customerName: finalCustomerName,
+          customerEmail: finalCustomerEmail,
           total: quote.total,
           serviceType: quote.serviceType,
           frequency: quote.frequency
@@ -228,10 +247,10 @@ export function QuoteDocument({ quote, settings, showAdminControls = true }: Quo
         </div>
         <div>
           <h3 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-3">Prepared For</h3>
-          <p className="text-sm font-bold text-zinc-900 mb-1">{quote.customerName || 'Valued Customer'}</p>
-          {quote.customerPhone && <p className="text-xs text-zinc-600">{quote.customerPhone}</p>}
-          {quote.customerEmail && <p className="text-xs text-zinc-600">{quote.customerEmail}</p>}
-          {quote.customerAddress && <p className="text-xs text-zinc-600 mt-1">{quote.customerAddress}</p>}
+          <p className="text-sm font-bold text-zinc-900 mb-1">{finalCustomerName || 'Valued Customer'}</p>
+          {finalCustomerPhone && <p className="text-xs text-zinc-600">{finalCustomerPhone}</p>}
+          {finalCustomerEmail && <p className="text-xs text-zinc-600">{finalCustomerEmail}</p>}
+          {finalCustomerAddress && <p className="text-xs text-zinc-600 mt-1">{finalCustomerAddress}</p>}
         </div>
       </div>
 

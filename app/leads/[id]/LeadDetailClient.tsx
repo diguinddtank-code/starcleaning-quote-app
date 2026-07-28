@@ -213,13 +213,21 @@ export function LeadDetailClient({ id }: { id: string }) {
         ? `${window.location.origin}/estimate/view?id=${selectedQuote.id}` 
         : `/estimate/view?id=${selectedQuote.id}`;
 
-    const htmlContent = generateQuoteEmailHtml(selectedQuote, settings, estimateUrl);
+    // Ensure we use the most up-to-date contact details from the lead if they are missing on the quote
+    const quoteWithLatestContact = {
+      ...selectedQuote,
+      customerName: selectedQuote.customerName || lead?.Nome || '',
+      customerPhone: selectedQuote.customerPhone || lead?.Telefone || '',
+      customerEmail: selectedQuote.customerEmail || lead?.Email || ''
+    };
+
+    const htmlContent = generateQuoteEmailHtml(quoteWithLatestContact, settings, estimateUrl);
     
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Estimate_${(selectedQuote.customerName || 'Client').replace(/\s+/g, '_')}.html`;
+    a.download = `Estimate_${(quoteWithLatestContact.customerName || 'Client').replace(/\s+/g, '_')}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -234,7 +242,15 @@ export function LeadDetailClient({ id }: { id: string }) {
         ? `${window.location.origin}/estimate/view?id=${q.id}` 
         : '';
       
-      const htmlContent = generateQuoteEmailHtml(q, settings, estimateUrl);
+      // Ensure we use the most up-to-date contact details from the lead if they are missing on the quote
+      const quoteWithLatestContact = {
+        ...q,
+        customerName: q.customerName || lead?.Nome || '',
+        customerPhone: q.customerPhone || lead?.Telefone || '',
+        customerEmail: q.customerEmail || lead?.Email || ''
+      };
+
+      const htmlContent = generateQuoteEmailHtml(quoteWithLatestContact, settings, estimateUrl);
       
       const payload = {
         event: 'estimate_sent',
