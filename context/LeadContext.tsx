@@ -211,10 +211,28 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
     // Optimistic update
     const finalUpdates = { ...updates, updated_at: new Date().toISOString() };
     
+    // Find the lead to check its previous stage and conversion status
+    const existingLead = leads.find((l) => l.id === id);
+    const wasClosed = existingLead?.ETAPA?.toLowerCase() === 'closing' || existingLead?.ETAPA?.toLowerCase() === 'fechado';
+    
     if ('ETAPA' in updates && updates.ETAPA !== undefined) {
-      if (updates.ETAPA.toLowerCase() === 'closing' || updates.ETAPA.toLowerCase() === 'fechado') {
-        finalUpdates.converted_at = new Date().toISOString();
+      const isNewStageClosed = updates.ETAPA.toLowerCase() === 'closing' || updates.ETAPA.toLowerCase() === 'fechado';
+      
+      if (isNewStageClosed) {
+        if (wasClosed) {
+          // If already closed/converted, preserve the converted_at (unless explicitly overwritten in updates)
+          finalUpdates.converted_at = updates.converted_at !== undefined ? updates.converted_at : existingLead?.converted_at;
+        } else {
+          // Newly converted! Set converted_at to now if not explicitly provided
+          finalUpdates.converted_at = updates.converted_at !== undefined ? updates.converted_at : new Date().toISOString();
+        }
+      } else {
+        // If the new stage is not closed, clear the conversion date
+        finalUpdates.converted_at = null;
       }
+    } else if (updates.converted_at !== undefined) {
+      // Respect explicitly set conversion dates
+      finalUpdates.converted_at = updates.converted_at;
     }
     
     setLeads((prev) => prev.map((l) => l.id === id ? { ...l, ...finalUpdates } : l));

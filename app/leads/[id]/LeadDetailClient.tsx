@@ -855,6 +855,22 @@ export function LeadDetailClient({ id }: { id: string }) {
                   </div>
 
                   <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                      📅 Mês de Conversão (KPI)
+                    </label>
+                    <input 
+                      type="month" 
+                      value={editForm.converted_at ? editForm.converted_at.substring(0, 7) : ''} 
+                      onChange={e => setEditForm({
+                        ...editForm, 
+                        converted_at: e.target.value ? `${e.target.value}-01T12:00:00.000Z` : null
+                      })} 
+                      className="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 focus:outline-none focus:border-sky-500 focus:bg-white transition-all" 
+                    />
+                    <p className="text-[9px] text-zinc-400">Este mês define onde o lead fechado aparece nos gráficos de KPI de conversão.</p>
+                  </div>
+
+                  <div className="space-y-1">
                     <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Special Notes / Observations</label>
                     <textarea 
                       rows={4} 
@@ -906,6 +922,32 @@ export function LeadDetailClient({ id }: { id: string }) {
                     >
                       {language === 'en' ? 'Assign Date' : 'Definir'}
                     </button>
+                  </div>
+
+                  {/* Conversion Month Display Card */}
+                  <div className="p-4 bg-sky-50 rounded-2xl border border-sky-100 flex items-center justify-between">
+                    <div>
+                      <h4 className="text-[9px] font-black text-sky-700 uppercase tracking-widest mb-1 flex items-center gap-1">
+                        <Calendar size={10} className="text-sky-600" /> Mês de Conversão (KPI)
+                      </h4>
+                      <p className="text-sm font-bold text-sky-900">
+                        {lead.converted_at 
+                          ? new Date(lead.converted_at).toLocaleString(language === 'en' ? 'en-US' : 'pt-BR', { month: 'long', year: 'numeric' })
+                          : (language === 'en' ? 'Not Marked' : 'Não definido')}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="month" 
+                        value={lead.converted_at ? lead.converted_at.substring(0, 7) : ''} 
+                        onChange={async (e) => {
+                          const val = e.target.value;
+                          const newDate = val ? `${val}-01T12:00:00.000Z` : null;
+                          await updateLead(lead.id, { converted_at: newDate });
+                        }}
+                        className="px-3 py-1.5 rounded-lg border border-sky-200 text-xs font-bold text-sky-950 bg-white focus:outline-none focus:border-sky-500 transition-all cursor-pointer"
+                      />
+                    </div>
                   </div>
 
                   {/* Tech Specs */}

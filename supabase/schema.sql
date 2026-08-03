@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS leads (
   "FOLLOWUP" TEXT,
   "UMSG" TEXT,
   is_referral BOOLEAN DEFAULT false,
+  converted_at TIMESTAMPTZ,
   created_by_email TEXT
 );
 

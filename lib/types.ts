@@ -71,7 +71,7 @@ export interface Lead {
   is_promo?: boolean;
   is_referral?: boolean;
   REMINDER_DATE?: string;
-  converted_at?: string;
+  converted_at?: string | null;
   created_by_email?: string;
 }
 
