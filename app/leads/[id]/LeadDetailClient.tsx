@@ -49,7 +49,14 @@ export function LeadDetailClient({ id }: { id: string }) {
   // Initialize form state once lead is available
   useEffect(() => {
     if (lead) {
-      setEditForm(lead);
+      if (!isEditing) {
+        setEditForm(lead);
+      } else {
+        setEditForm(prev => ({
+          ...prev,
+          converted_at: lead.converted_at
+        }));
+      }
       if (lead.converted_at) {
         setPickerYear(new Date(lead.converted_at).getUTCFullYear());
       }
@@ -82,7 +89,7 @@ export function LeadDetailClient({ id }: { id: string }) {
         setLoggedGoals([]);
       }
     }
-  }, [lead, language]);
+  }, [lead, language, isEditing]);
 
   // Save to recent leads logs for easy dashboard traversal
   useEffect(() => {

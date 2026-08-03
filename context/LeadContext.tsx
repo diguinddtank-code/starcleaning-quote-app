@@ -227,8 +227,8 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
           finalUpdates.converted_at = updates.converted_at !== undefined ? updates.converted_at : new Date().toISOString();
         }
       } else {
-        // If the new stage is not closed, clear the conversion date
-        finalUpdates.converted_at = null;
+        // Keep existing conversion date if already set, instead of automatically clearing it
+        finalUpdates.converted_at = updates.converted_at !== undefined ? updates.converted_at : (existingLead?.converted_at || null);
       }
     } else if (updates.converted_at !== undefined) {
       // Respect explicitly set conversion dates
