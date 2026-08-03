@@ -7,7 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { notFound, useRouter } from 'next/navigation';
 import { 
   User, Mail, Phone, MapPin, Calendar, Edit3, MessageCircle, FileText, 
-  ArrowLeft, Loader2, Save, X, DollarSign, Printer, ChevronRight, Send, 
+  ArrowLeft, Loader2, Save, X, DollarSign, Printer, ChevronRight, ChevronLeft, Send, 
   CheckCircle2, Sparkles, AlertTriangle, Shield, Check, Copy, Flame, Users, Heart,
   Trash2
 } from 'lucide-react';
@@ -30,6 +30,7 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Lead>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
 
   const [selectedQuote, setSelectedQuote] = useState<SavedQuote | null>(null);
   const [activePlaybookTab, setActivePlaybookTab] = useState<'scarcity' | 'social' | 'desire' | 'conversational'>('scarcity');
@@ -49,6 +50,9 @@ export function LeadDetailClient({ id }: { id: string }) {
   useEffect(() => {
     if (lead) {
       setEditForm(lead);
+      if (lead.converted_at) {
+        setPickerYear(new Date(lead.converted_at).getUTCFullYear());
+      }
       
       // Parse logged pains and goals from observations if already saved
       const obs = lead.OBSERVACOES || '';
@@ -925,28 +929,93 @@ export function LeadDetailClient({ id }: { id: string }) {
                   </div>
 
                   {/* Conversion Month Display Card */}
-                  <div className="p-4 bg-sky-50 rounded-2xl border border-sky-100 flex items-center justify-between">
-                    <div>
-                      <h4 className="text-[9px] font-black text-sky-700 uppercase tracking-widest mb-1 flex items-center gap-1">
-                        <Calendar size={10} className="text-sky-600" /> Mês de Conversão (KPI)
-                      </h4>
-                      <p className="text-sm font-bold text-sky-900">
-                        {lead.converted_at 
-                          ? new Date(lead.converted_at).toLocaleString(language === 'en' ? 'en-US' : 'pt-BR', { month: 'long', year: 'numeric' })
-                          : (language === 'en' ? 'Not Marked' : 'Não definido')}
-                      </p>
+                  <div className="p-5 bg-gradient-to-br from-white to-zinc-50 rounded-2xl border border-zinc-200 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+                      <div>
+                        <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-0.5 flex items-center gap-1.5">
+                          <Calendar size={12} className="text-sky-500" /> 
+                          {language === 'en' ? 'CONVERSION MONTH (KPI)' : 'MÊS DE CONVERSÃO (KPI)'}
+                        </h4>
+                        <p className="text-base font-black text-zinc-900 flex items-center gap-2">
+                          {lead.converted_at ? (
+                            <>
+                              <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
+                              {new Date(lead.converted_at).toLocaleString(language === 'en' ? 'en-US' : 'pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' })}
+                            </>
+                          ) : (
+                            <>
+                              <span className="w-2.5 h-2.5 bg-zinc-350 rounded-full" />
+                              <span className="text-zinc-400">{language === 'en' ? 'Not Converted Yet' : 'Não convertido / Sem mês'}</span>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                      
+                      {lead.converted_at && (
+                        <button 
+                          onClick={async () => {
+                            await updateLead(lead.id, { converted_at: null });
+                          }}
+                          className="text-[10px] font-black uppercase tracking-wider text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-100 transition-all cursor-pointer"
+                        >
+                          {language === 'en' ? 'Clear' : 'Limpar'}
+                        </button>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="month" 
-                        value={lead.converted_at ? lead.converted_at.substring(0, 7) : ''} 
-                        onChange={async (e) => {
-                          const val = e.target.value;
-                          const newDate = val ? `${val}-01T12:00:00.000Z` : null;
-                          await updateLead(lead.id, { converted_at: newDate });
-                        }}
-                        className="px-3 py-1.5 rounded-lg border border-sky-200 text-xs font-bold text-sky-950 bg-white focus:outline-none focus:border-sky-500 transition-all cursor-pointer"
-                      />
+
+                    <div className="space-y-3 bg-zinc-50/60 p-3 rounded-xl border border-zinc-150">
+                      {/* Year Picker Selector Header */}
+                      <div className="flex items-center justify-between px-2">
+                        <button 
+                          onClick={() => setPickerYear(prev => prev - 1)}
+                          className="p-1.5 hover:bg-zinc-200 rounded-lg text-zinc-600 hover:text-zinc-900 transition-colors cursor-pointer"
+                          title={language === 'en' ? 'Previous Year' : 'Ano Anterior'}
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        
+                        <span className="text-xs font-black text-zinc-800 tracking-wider bg-white px-3 py-1 rounded-md border border-zinc-200 shadow-sm select-none">
+                          {pickerYear}
+                        </span>
+
+                        <button 
+                          onClick={() => setPickerYear(prev => prev + 1)}
+                          className="p-1.5 hover:bg-zinc-200 rounded-lg text-zinc-600 hover:text-zinc-900 transition-colors cursor-pointer"
+                          title={language === 'en' ? 'Next Year' : 'Próximo Ano'}
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+
+                      {/* Month Buttons Matrix */}
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {(language === 'en' ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] : ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']).map((m, idx) => {
+                          const activeDate = lead.converted_at ? new Date(lead.converted_at) : null;
+                          const activeMonthIdx = activeDate ? activeDate.getUTCMonth() : null;
+                          const activeYear = activeDate ? activeDate.getUTCFullYear() : null;
+                          const isCurrent = activeMonthIdx === idx && activeYear === pickerYear;
+                          
+                          return (
+                            <button
+                              key={m}
+                              onClick={async () => {
+                                const monthStr = String(idx + 1).padStart(2, '0');
+                                const newDate = `${pickerYear}-${monthStr}-01T12:00:00.000Z`;
+                                await updateLead(lead.id, { converted_at: newDate });
+                              }}
+                              className={`
+                                py-2.5 text-[10px] font-black rounded-lg transition-all duration-200 uppercase tracking-wide text-center cursor-pointer
+                                ${isCurrent 
+                                  ? 'bg-gradient-to-br from-sky-500 to-indigo-600 text-white shadow-md shadow-sky-100 scale-102 border-transparent animate-none' 
+                                  : 'bg-white hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 border border-zinc-200/80 hover:border-zinc-300'
+                                }
+                              `}
+                            >
+                              {m}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
