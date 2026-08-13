@@ -6,6 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { Download, ArrowUpRight, Target, Users, CalendarCheck, TrendingUp, Calendar, Filter, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { isLeadStageClosed } from '@/lib/utils';
 
 const COLORS = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#64748b', '#ec4899', '#f43f5e', '#d946ef', '#14b8a6', '#f97316', '#6366f1', '#eab308'];
 
@@ -90,8 +91,7 @@ export default function KPIPage() {
 
   const getCloseDate = (lead: any) => {
     if (lead.converted_at) return new Date(lead.converted_at);
-    if (lead.updated_at) return new Date(lead.updated_at);
-    return getLeadDate(lead); // Fallback
+    return getLeadDate(lead); // Fallback to created date, NEVER updated_at
   };
 
   // Base created leads
@@ -108,8 +108,7 @@ export default function KPIPage() {
   // Find all leads that are scheduled/closed NOW, and whose close date falls into this period.
   // This satisfies: "created last month, but closing this month -> shows as converted this month".
   const scheduledLeads = leads.filter(l => {
-    const s = l.ETAPA?.toLowerCase() || '';
-    const isClosed = s.includes('agendado') || s.includes('scheduling') || s.includes('closing') || s.includes('fechado') || s.includes('agendou');
+    const isClosed = isLeadStageClosed(l.ETAPA);
     if (!isClosed) return false;
     
     return isDateWithin(getCloseDate(l), filterType, startDate, endDate);

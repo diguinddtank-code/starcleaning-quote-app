@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Lead } from '@/lib/types';
 import { supabase, hasSupabase } from '@/lib/supabase';
+import { isLeadStageClosed } from '@/lib/utils';
 
 interface LeadContextType {
   leads: Lead[];
@@ -213,10 +214,10 @@ export function LeadProvider({ children }: { children: React.ReactNode }) {
     
     // Find the lead to check its previous stage and conversion status
     const existingLead = leads.find((l) => l.id === id);
-    const wasClosed = existingLead?.ETAPA?.toLowerCase() === 'closing' || existingLead?.ETAPA?.toLowerCase() === 'fechado';
+    const wasClosed = isLeadStageClosed(existingLead?.ETAPA);
     
     if ('ETAPA' in updates && updates.ETAPA !== undefined) {
-      const isNewStageClosed = updates.ETAPA.toLowerCase() === 'closing' || updates.ETAPA.toLowerCase() === 'fechado';
+      const isNewStageClosed = isLeadStageClosed(updates.ETAPA);
       
       if (isNewStageClosed) {
         if (wasClosed) {

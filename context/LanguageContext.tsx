@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { isLeadStageClosed } from '@/lib/utils';
 
 type Language = 'en' | 'pt';
 
@@ -201,7 +202,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (s.includes('não responde') || s.includes('nao responde') || s.includes('no response') || s.includes('no_response') || s.includes('responde')) return t('stage.no_response');
     if (s.includes('not interested') || s.includes('not_interested') || s.includes('não tem interesse') || s.includes('nao tem interesse') || s.includes('desinteressado') || s.includes('interest') || s.includes('dupe') || s.includes('fake') || s.includes('miss')) return t('stage.not_interested');
     if (s.includes('too pricey') || s.includes('too_pricey') || s.includes('caro') || s.includes('pricey')) return t('stage.too_pricey');
-    if (s.includes('closing') || s.includes('closed') || s.includes('agendado') || s.includes('scheduled') || s.includes('deposit') || s.includes('depósito') || s.includes('deposito') || s.includes('confirm')) return t('stage.closing');
+    if (isLeadStageClosed(s) || s.includes('deposit') || s.includes('depósito') || s.includes('deposito')) return t('stage.closing');
     
     return t('stage.novo');
   };

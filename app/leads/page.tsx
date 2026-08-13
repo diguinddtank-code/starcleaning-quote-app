@@ -8,6 +8,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Lead } from '@/lib/types';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
+import { isLeadStageClosed } from '@/lib/utils';
 
 const getStageConfig = (stageName: string) => {
   const name = (stageName || '').toLowerCase();
@@ -132,7 +133,7 @@ const getStageConfig = (stageName: string) => {
     };
   }
 
-  if (name.includes('closing') || name.includes('win') || name.includes('won') || name.includes('fechar') || name.includes('agendado') || name.includes('scheduled')) {
+  if (isLeadStageClosed(stageName)) {
     return {
       borderColor: 'border-violet-200/80 hover:border-violet-300',
       bgColor: 'bg-violet-50/10',
@@ -669,34 +670,33 @@ export default function LeadsPage() {
     return true;
   }, []);
 
-  const getLeadCreationDate = (l: Lead) => {
+  const getLeadCreationDate = useCallback((l: Lead) => {
     if (l.created_at) return new Date(l.created_at);
     if (l.Data) return new Date(l.Data);
     return null;
-  };
+  }, []);
 
-  const getLeadCloseDate = (l: Lead) => {
+  const getLeadCloseDate = useCallback((l: Lead) => {
     if (l.converted_at) return new Date(l.converted_at);
-    if (l.updated_at) return new Date(l.updated_at);
-    return getLeadCreationDate(l);
-  };
+    return getLeadCreationDate(l); // Never fallback to updated_at
+  }, [getLeadCreationDate]);
 
   const createdKPILeads = useMemo(() => {
     return leads.filter(l => isDateInPeriod(getLeadCreationDate(l), kpiTimeRange, customStartDate, customEndDate));
-  }, [leads, kpiTimeRange, customStartDate, customEndDate, isDateInPeriod]);
+  }, [leads, kpiTimeRange, customStartDate, customEndDate, isDateInPeriod, getLeadCreationDate]);
 
   const totalLeads = createdKPILeads.length;
   const newLeadsCount = createdKPILeads.filter(l => getKanbanStage(l.ETAPA) === t('stage.novo')).length;
-  const activeCount = createdKPILeads.filter(l => getKanbanStage(l.ETAPA) !== t('stage.novo') && getKanbanStage(l.ETAPA) !== t('stage.closing') && getKanbanStage(l.ETAPA) !== t('stage.no_response') && getKanbanStage(l.ETAPA) !== t('stage.not_interested') && getKanbanStage(l.ETAPA) !== t('stage.too_pricey')).length;
+  const activeCount = createdKPILeads.filter(l => getKanbanStage(l.ETAPA) !== t('stage.novo') && !isLeadStageClosed(l.ETAPA) && getKanbanStage(l.ETAPA) !== t('stage.no_response') && getKanbanStage(l.ETAPA) !== t('stage.not_interested') && getKanbanStage(l.ETAPA) !== t('stage.too_pricey')).length;
   const referralCount = createdKPILeads.filter(l => l.is_referral).length;
   const tooPriceyCount = createdKPILeads.filter(l => getKanbanStage(l.ETAPA) === t('stage.too_pricey')).length;
 
   const convertedCount = useMemo(() => {
     return leads.filter(l => {
-      if (getKanbanStage(l.ETAPA) !== t('stage.closing')) return false;
+      if (!isLeadStageClosed(l.ETAPA)) return false;
       return isDateInPeriod(getLeadCloseDate(l), kpiTimeRange, customStartDate, customEndDate);
     }).length;
-  }, [leads, kpiTimeRange, customStartDate, customEndDate, isDateInPeriod, t]);
+  }, [leads, kpiTimeRange, customStartDate, customEndDate, isDateInPeriod, getLeadCloseDate]);
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 md:pb-8 space-y-6">

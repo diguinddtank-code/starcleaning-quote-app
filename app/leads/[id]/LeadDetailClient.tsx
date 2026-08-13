@@ -31,6 +31,8 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [editForm, setEditForm] = useState<Partial<Lead>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
+  const [pendingConvertedAt, setPendingConvertedAt] = useState<string | null>(null);
+
 
   const [selectedQuote, setSelectedQuote] = useState<SavedQuote | null>(null);
   const [activePlaybookTab, setActivePlaybookTab] = useState<'scarcity' | 'social' | 'desire' | 'conversational'>('scarcity');
@@ -57,6 +59,7 @@ export function LeadDetailClient({ id }: { id: string }) {
           converted_at: lead.converted_at
         }));
       }
+      setPendingConvertedAt(lead.converted_at || null);
       if (lead.converted_at) {
         setPickerYear(new Date(lead.converted_at).getUTCFullYear());
       }
@@ -866,6 +869,22 @@ export function LeadDetailClient({ id }: { id: string }) {
                   </div>
 
                   <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                      📅 Mês de Conversão (KPI)
+                    </label>
+                    <input 
+                      type="month" 
+                      value={editForm.converted_at ? editForm.converted_at.substring(0, 7) : ''} 
+                      onChange={e => setEditForm({
+                        ...editForm, 
+                        converted_at: e.target.value ? `${e.target.value}-01T12:00:00.000Z` : null
+                      })} 
+                      className="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 focus:outline-none focus:border-sky-500 focus:bg-white transition-all" 
+                    />
+                    <p className="text-[9px] text-zinc-400">Este mês define onde o lead fechado aparece nos gráficos de KPI de conversão.</p>
+                  </div>
+
+                  <div className="space-y-1">
                     <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Special Notes / Observations</label>
                     <textarea 
                       rows={4} 
@@ -875,6 +894,15 @@ export function LeadDetailClient({ id }: { id: string }) {
                       className="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 focus:outline-none resize-none" 
                     />
                   </div>
+
+                  <button 
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="w-full mt-4 flex justify-center items-center gap-2 px-5 py-3 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    {isSaving ? <Loader2 size={13} className="animate-spin" /> : <><Save size={13} /> {language === 'en' ? 'Save Changes' : 'Salvar Alterações'}</>}
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-6">
