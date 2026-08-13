@@ -174,21 +174,31 @@ const matchTimeFilter = (l: Lead, filter: string, customStart?: string, customEn
 
   const dateCandidates: Date[] = [];
   
-  if (l.created_at) {
-    const d = new Date(l.created_at);
-    if (!isNaN(d.getTime())) dateCandidates.push(d);
-  }
-  if (l.updated_at) {
-    const d = new Date(l.updated_at);
-    if (!isNaN(d.getTime())) dateCandidates.push(d);
-  }
-  if (l.UMSG) {
-    const d = new Date(l.UMSG);
-    if (!isNaN(d.getTime())) dateCandidates.push(d);
-  }
-  if (l.Data) {
-    const d = new Date(l.Data);
-    if (!isNaN(d.getTime())) dateCandidates.push(d);
+  // Se o lead estiver na etapa de fechamento, considerar SOMENTE a data de fechamento real (converted_at ou fallback para created_at)
+  if (isLeadStageClosed(l.ETAPA)) {
+    const closeDateStr = l.converted_at || l.created_at;
+    if (closeDateStr) {
+      const d = new Date(closeDateStr);
+      if (!isNaN(d.getTime())) dateCandidates.push(d);
+    }
+  } else {
+    // Para outros leads, a lógica continua a mesma
+    if (l.created_at) {
+      const d = new Date(l.created_at);
+      if (!isNaN(d.getTime())) dateCandidates.push(d);
+    }
+    if (l.updated_at) {
+      const d = new Date(l.updated_at);
+      if (!isNaN(d.getTime())) dateCandidates.push(d);
+    }
+    if (l.UMSG) {
+      const d = new Date(l.UMSG);
+      if (!isNaN(d.getTime())) dateCandidates.push(d);
+    }
+    if (l.Data) {
+      const d = new Date(l.Data);
+      if (!isNaN(d.getTime())) dateCandidates.push(d);
+    }
   }
 
   if (dateCandidates.length === 0) {
