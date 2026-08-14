@@ -41,7 +41,16 @@ const defaultSettings: PricingSettings = {
     cabinets: 100,
     garage: 50,
     bedChange: 10,
+    sheetChange: 10
   },
+  campaign: {
+    name: '',
+    startDate: '',
+    endDate: '',
+    discountPercent: 0,
+    description: '',
+    imageUrl: ''
+  }
 };
 
 interface SettingsContextType {

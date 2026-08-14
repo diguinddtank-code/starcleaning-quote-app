@@ -45,6 +45,15 @@ export interface PricingSettings {
     bedChange: number;
     sheetChange?: number;
   };
+  campaign?: {
+    name: string;
+    startDate: string;
+    endDate: string;
+    discountPercent: number;
+    description: string;
+    imageUrl?: string;
+  };
+
 }
 
 export interface Lead {

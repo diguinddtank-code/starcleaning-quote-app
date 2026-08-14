@@ -6,19 +6,28 @@ import { useLead } from '@/context/LeadContext';
 import { useQuote } from '@/context/QuoteContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { 
-  Users, PlusCircle, History, ArrowRight, 
+import { useSettings } from '@/context/SettingsContext';
+import { Megaphone, Users, PlusCircle, History, ArrowRight, 
   BarChart2, Calculator, BookOpen, 
   CheckCircle, FileText, Activity, 
   DollarSign, TrendingUp, Inbox, Calendar, Bell, Award
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function DashboardPage() {
   const { leads: rawLeads } = useLead();
   const { savedQuotes } = useQuote();
   const { user } = useAuth();
   const { language, t, translateStage } = useLanguage();
+  const { settings } = useSettings();
+
+  const isCampaignActive = (() => {
+    if (!settings?.campaign?.name) return false;
+    if (!settings.campaign.startDate || !settings.campaign.endDate) return false;
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    return todayStr >= settings.campaign.startDate && todayStr <= settings.campaign.endDate;
+  })();
 
   const uniqueEmails = new Set();
   const leads = rawLeads.filter(lead => {
@@ -101,7 +110,48 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 md:pb-8 space-y-8">
+    <>
+      <AnimatePresence>
+        {isCampaignActive && settings.campaign && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="w-full bg-gradient-to-r from-rose-500 via-orange-500 to-rose-500 text-white overflow-hidden relative z-40 border-b border-rose-600/30 shadow-sm"
+          >
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+            <Link href="/campanhas" className="block w-full py-2.5 px-4">
+              <div className="max-w-7xl mx-auto flex items-center justify-center sm:justify-between gap-4">
+                <div className="hidden sm:flex items-center gap-2">
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                  </span>
+                  <span className="text-xs font-black uppercase tracking-widest text-white/90">
+                    {language === 'en' ? 'Active Campaign' : 'Campanha Ativa'}
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
+                  <Megaphone size={16} className="shrink-0 hidden sm:block animate-pulse" />
+                  <p className="text-sm font-bold text-center flex-wrap flex justify-center items-center gap-x-2 gap-y-1">
+                    <span>{settings.campaign.name}</span>
+                    <span className="bg-white text-rose-600 px-2 py-0.5 rounded-full text-xs font-black">
+                      {settings.campaign.discountPercent}% OFF
+                    </span>
+                  </p>
+                </div>
+                
+                <div className="hidden sm:flex items-center gap-1 text-xs font-bold text-white/90 group hover:text-white transition-colors">
+                  {language === 'en' ? 'View Details' : 'Ver Detalhes'}
+                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 md:pb-8 space-y-8">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
         <div>
           <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">
@@ -461,7 +511,7 @@ export default function DashboardPage() {
       
       {/* Quick Action Grid */}
       <h2 className="text-xl font-bold text-zinc-900 pt-4">{t('db.access')}</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Link href="/estimate" className="bg-white p-4 rounded-xl border border-zinc-200 shadow-sm hover:shadow hover:border-sky-300 transition-all flex flex-col items-center justify-center text-center gap-2 group">
           <div className="w-12 h-12 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center group-hover:scale-110 transition-transform">
             <Calculator size={24} />
@@ -486,9 +536,16 @@ export default function DashboardPage() {
           </div>
           <span className="text-sm font-semibold text-zinc-900">{t('db.playbook')}</span>
         </Link>
+        <Link href="/campanhas" className="bg-white p-4 rounded-xl border border-zinc-200 shadow-sm hover:shadow hover:border-rose-300 transition-all flex flex-col items-center justify-center text-center gap-2 group">
+          <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Megaphone size={24} />
+          </div>
+          <span className="text-sm font-semibold text-zinc-900">{language === 'en' ? 'Campaigns' : 'Campanhas'}</span>
+        </Link>
       </div>
 
     </div>
+    </>
   );
 }
 

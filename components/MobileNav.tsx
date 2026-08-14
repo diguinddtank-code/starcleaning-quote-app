@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Calculator, History, Settings, LogOut, BookOpen, BarChart2, FileText } from 'lucide-react';
+import {  LayoutDashboard, Calculator, History, Settings, LogOut, BookOpen, BarChart2, FileText , Megaphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -10,7 +10,7 @@ import { useLanguage } from '@/context/LanguageContext';
 export function MobileNav() {
   const pathname = usePathname();
   const { signOut } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   if (pathname === '/estimate/view') return null;
 
@@ -19,6 +19,7 @@ export function MobileNav() {
     { name: t('nav.estimate'), href: '/estimate', icon: Calculator },
     { name: t('nav.quotes'), href: '/history', icon: FileText },
     { name: t('nav.leads'), href: '/leads', icon: History },
+    { name: language === 'en' ? 'Campaigns' : 'Campanhas', href: '/campanhas', icon: Megaphone },
     { name: 'KPIs', href: '/kpi', icon: BarChart2 },
     { name: t('nav.settings'), href: '/settings', icon: Settings },
   ];
