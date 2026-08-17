@@ -48,6 +48,8 @@ const defaultSettings: PricingSettings = {
     startDate: '',
     endDate: '',
     discountPercent: 0,
+    
+    targetAudience: 'All Clients',
     description: '',
     imageUrl: ''
   }

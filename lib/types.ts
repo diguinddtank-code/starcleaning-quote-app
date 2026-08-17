@@ -52,6 +52,19 @@ export interface PricingSettings {
     discountPercent: number;
     description: string;
     imageUrl?: string;
+    targetAudience?: string;
+    closedClients?: number;
+    history?: {
+      id: string;
+      name: string;
+      startDate: string;
+      endDate: string;
+      discountPercent: number;
+      description: string;
+      imageUrl?: string;
+      targetAudience?: string;
+      closedClients?: number;
+    }[];
   };
 
 }

@@ -120,7 +120,7 @@ export default function DashboardPage() {
             className="w-full bg-gradient-to-r from-rose-500 via-orange-500 to-rose-500 text-white overflow-hidden relative z-40 border-b border-rose-600/30 shadow-sm"
           >
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-            <Link href="/campanhas" className="block w-full py-2.5 px-4">
+            <Link href="/campanhas" className="block w-full py-3 px-4 relative z-20 cursor-pointer hover:bg-black/5 transition-colors">
               <div className="max-w-7xl mx-auto flex items-center justify-center sm:justify-between gap-4">
                 <div className="hidden sm:flex items-center gap-2">
                   <span className="flex h-2 w-2 relative">
