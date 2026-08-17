@@ -94,6 +94,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
               weeklyMultiplier: Number(data.weekly_multiplier || 0.8),
               biWeeklyMultiplier: Number(data.bi_weekly_multiplier || 0.85),
               monthlyMultiplier: Number(data.monthly_multiplier || 0.9),
+              campaign: data.campaign ? (typeof data.campaign === 'string' ? JSON.parse(data.campaign) : data.campaign) : defaultSettings.campaign,
               extras: { ...defaultExtras, ...(data.extras || {}) } as any,
             };
             setSettings(mappedSettings);
@@ -124,6 +125,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                 weeklyMultiplier: Number(data.weekly_multiplier || 0.8),
                 biWeeklyMultiplier: Number(data.bi_weekly_multiplier || 0.85),
                 monthlyMultiplier: Number(data.monthly_multiplier || 0.9),
+                campaign: data.campaign ? (typeof data.campaign === 'string' ? JSON.parse(data.campaign) : data.campaign) : defaultSettings.campaign,
                 extras: { ...defaultExtras, ...(data.extras || {}) } as any,
               });
             }
@@ -173,6 +175,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           weekly_multiplier: newSettings.weeklyMultiplier,
           bi_weekly_multiplier: newSettings.biWeeklyMultiplier,
           monthly_multiplier: newSettings.monthlyMultiplier,
+          campaign: newSettings.campaign,
           extras: newSettings.extras,
         });
       } catch (e) {
