@@ -28,6 +28,12 @@ const nextConfig: NextConfig = {
         hostname: 'www.starcleaningsc.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        port: '',
+        pathname: '/**',
       }
     ],
   },

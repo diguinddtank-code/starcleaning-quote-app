@@ -139,6 +139,10 @@ export default function DashboardPage() {
                     <span className="bg-white text-rose-600 px-2 py-0.5 rounded-full text-xs font-black">
                       {settings.campaign.discountPercent}% OFF
                     </span>
+                    <span className="text-[10px] uppercase font-bold tracking-wider bg-black/10 px-2 py-0.5 rounded-full text-white/90 flex items-center gap-1">
+                      <Calendar size={10} />
+                      {new Date(settings.campaign.startDate + 'T12:00:00').toLocaleDateString()} &mdash; {new Date(settings.campaign.endDate + 'T12:00:00').toLocaleDateString()}
+                    </span>
                   </p>
                 </div>
                 
