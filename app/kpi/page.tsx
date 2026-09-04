@@ -17,14 +17,42 @@ export default function KPIPage() {
   const { language } = useLanguage();
   const [isExporting, setIsExporting] = useState(false);
 
-  const uniqueEmails = new Set();
-  const leads = rawLeads.filter(lead => {
-    if (!lead.Email) return true;
+  const leadGroups = new Map<string, any[]>();
+  const leadsWithoutEmail: any[] = [];
+
+  rawLeads.forEach(lead => {
+    if (!lead.Email) {
+      leadsWithoutEmail.push(lead);
+      return;
+    }
     const email = lead.Email.toLowerCase().trim();
-    if (uniqueEmails.has(email)) return false;
-    uniqueEmails.add(email);
-    return true;
+    if (!leadGroups.has(email)) {
+      leadGroups.set(email, []);
+    }
+    leadGroups.get(email)!.push(lead);
   });
+
+  const deduplicatedLeads = [...leadsWithoutEmail];
+  
+  leadGroups.forEach(group => {
+    if (group.length === 1) {
+      deduplicatedLeads.push(group[0]);
+      return;
+    }
+    const closedLeads = group.filter(l => isLeadStageClosed(l.ETAPA));
+    if (closedLeads.length > 0) {
+      closedLeads.sort((a, b) => {
+        const dateA = a.converted_at ? new Date(a.converted_at).getTime() : (a.created_at ? new Date(a.created_at).getTime() : 0);
+        const dateB = b.converted_at ? new Date(b.converted_at).getTime() : (b.created_at ? new Date(b.created_at).getTime() : 0);
+        return dateB - dateA;
+      });
+      deduplicatedLeads.push(closedLeads[0]);
+    } else {
+      deduplicatedLeads.push(group[0]);
+    }
+  });
+
+  const leads = deduplicatedLeads;
   
   // Date states
   const [filterType, setFilterType] = useState<FilterPeriod>('all');
@@ -107,7 +135,7 @@ export default function KPIPage() {
   
   // Find all leads that are scheduled/closed NOW, and whose close date falls into this period.
   // This satisfies: "created last month, but closing this month -> shows as converted this month".
-  const scheduledLeads = leads.filter(l => {
+  const scheduledLeads = rawLeads.filter(l => {
     const isClosed = isLeadStageClosed(l.ETAPA);
     if (!isClosed) return false;
     
