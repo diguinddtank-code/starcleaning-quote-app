@@ -219,9 +219,9 @@ export default function KPIPage() {
     return acc;
   }, initialStages);
 
-  const stageData = Object.entries(stageDataMap)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a,b) => b.value - a.value);
+  const stageData = Object.entries(stageDataMap as Record<string, number>)
+    .map(([name, value]) => ({ name, value: value as number }))
+    .sort((a, b) => b.value - a.value);
 
   // Leads over time graph grouping (Leads created vs Leads closed)
   const timeMap = allRelevantLeads.reduce((acc, lead) => {
