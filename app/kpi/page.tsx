@@ -263,7 +263,7 @@ export default function KPIPage() {
     return acc;
   }, {} as Record<string, { Leads: number, ClosedLeads: number, _date: Date }>);
   
-  const timeData = Object.entries(timeMap)
+  const timeData = Object.entries(timeMap as Record<string, { Leads: number; ClosedLeads: number; _date: Date }>)
     .filter(([key]) => key !== 'Unknown')
     .map(([name, data]) => ({ name, Leads: data.Leads, ClosedLeads: data.ClosedLeads, _date: data._date }))
     .sort((a, b) => a._date.getTime() - b._date.getTime());
